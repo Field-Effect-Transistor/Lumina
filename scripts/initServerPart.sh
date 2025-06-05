@@ -1,6 +1,21 @@
 #!/bin/zsh
+#
+#   Name:   initServerPart.sh
+#   Author: Field Effect Transistor
+#   Desc:   Initialize Lumina openvpn server and ca-machine
+#   Creation Date: 06/05/25
+#
 
 set -e
+
+# Load lumina.vars
+CONFIG_FILE="$(dirname "$0")/lumina.vars"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "[ERROR] $CONFIG_FILE not found"
+    exit 1
+fi
 
 # Check dependecies
 dependecies=("openvpn" "openssl" "git" "unzip" "curl")
@@ -26,15 +41,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 2
 fi
 
-# Providing Server Name
-SERVER_NAME=""
-echo "[INPUT] Please provide server name: "
-read -r SERVER_NAME
-
 # Creating working directory
-LUMINA_DIR="/root/.lumina"
-LUMINA_DIR_BACKUP="${LUMINA_DIR}.bak"
-
 if [ -d "$LUMINA_DIR" ]; then
     echo "[WARN] $LUMINA_DIR already exists"
     echo "[INPUT] Do you want to [Y]es (overwrite), [N]o (exit), or [B]ackup (default B)?"
@@ -75,17 +82,41 @@ else
     mkdir -p "$LUMINA_DIR"
 fi
 
-# Clonning easy-rsa
-cd "$LUMINA_DIR"
-echo "[INFO] Installing easy-rsa"
-curl -SL "https://github.com/OpenVPN/easy-rsa/archive/refs/heads/master.zip" -o "easy-rsa.zip"
-unzip easy-rsa.zip
-EASY_RSA_DIR="$LUMINA_DIR/easy-rsa-master/easyrsa3"
-mv "$EASY_RSA_DIR"/vars.example "$EASY_RSA_DIR"/vars
-rm easy-rsa.zip
+# Check easy-rsa
+if [ -d "$EASY_RSA_DIR" ]; then
+    echo "[INFO] easy-rsa already installed"
+    echo "[INPUT] Do you want to reinstall easy-rsa? [Y]es or [N]o (default N)?"
+    read -r choice_input
+
+    choice_char_upper=$(echo "$choice_input" | tr '[:lower:]' '[:upper:]')
+
+    if [[ -z "$choice_char_upper" ]]; then
+        choice_char_upper="N"
+    fi
+
+    if [[ "$choice_char_upper" == "Y" ]]; then
+        echo "[INFO] Removing $EASY_RSA_DIR"
+        rm -rf "$EASY_RSA_DIR"
+        echo "[INFO] Installing easy-rsa"
+        sh "$(dirname "$0")/installEasyRsa.sh"
+    fi
+else
+    echo "[INFO] Installing easy-rsa"
+    sh "$(dirname "$0")/installEasyRsa.sh"
+fi
+
+# Providing Server Name
+if [ -z "$SERVER_NAME" ]; then
+    echo "[INPUT] Please provide server name: "
+    read -r SERVER_NAME
+
+    if [ -z "$SERVER_NAME" ]; then
+        echo "[ERROR] Server name cannot be empty. Exiting."
+        exit 1
+    fi
+fi
 
 # Create CA-Machine
-CA_MACHINE_DIR="$LUMINA_DIR/ca-machine"
 
 echo "[INFO] Creating directory $CA_MACHINE_DIR"
 mkdir "$CA_MACHINE_DIR"
@@ -99,8 +130,6 @@ easyrsa init-pki
 EASYRSA_REQ_CN=$SERVER_NAME easyrsa build-ca nopass <<< "$SERVER_NAME"
 
 # Create OpenVPN Server
-OPENVPN_SERVER_DIR="$LUMINA_DIR/openvpn/server"
-
 echo "[INFO] Copying ca.crt to $OPENVPN_SERVER_DIR"
 mkdir -p "$OPENVPN_SERVER_DIR"
 cp "$CA_MACHINE_DIR/pki/ca.crt" "$OPENVPN_SERVER_DIR/ca.crt"
@@ -126,4 +155,37 @@ chown openvpn:network "$OPENVPN_SERVER_DIR/ta.key"
 
 # Sign server certificate
 cd "$CA_MACHINE_DIR"
-EASYRSA_REQ_CN=$SERVER_NAME easyrsa sign-req server "$SERVER_NAME" <<< "$SERVER_NAME"
+EASYRSA_REQ_CN=$SERVER_NAME easyrsa import-req "$SERVER_DIR/pki/reqs/$SERVER_NAME.req" "$SERVER_NAME"
+EASYRSA_REQ_CN=$SERVER_NAME easyrsa sign-req server "$SERVER_NAME" <<< "yes"
+
+# Copying server certificate to openvpn server
+cp "$CA_MACHINE_DIR/pki/issued/$SERVER_NAME.crt" "$OPENVPN_SERVER_DIR"
+chown openvpn:network "$OPENVPN_SERVER_DIR/$SERVER_NAME.crt"
+
+# Configuring OpenVPN Server
+cat << EOF > "$OPENVPN_SERVER_DIR/server.conf"
+ca ca.crt
+cert Neon.crt
+key Neon.key
+dh dh.pem
+
+tls-crypt ta.key
+
+user nobody
+group nobody
+
+config ip.conf
+
+dev tun
+
+persist-key
+persist-tun
+
+client-to-client
+EOF
+
+cat << EOF > "$OPENVPN_SERVER_DIR/ip.conf"
+port 443
+proto udp
+server 10.8.0.0 255.255.255.0
+EOF
