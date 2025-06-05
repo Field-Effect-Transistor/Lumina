@@ -1,5 +1,104 @@
 #!/bin/zsh
 #
+#   Name:   addClient.sh
+#   Author: Field Effect Transistor
+#   Desc:   Add client to openvpn server
+#           You should run ./initServerPart.sh first
+#   Creation Date: 06/05/25
+#
+
+# Load lumina.vars
+CONFIG_FILE="$(dirname "$0")/lumina.vars"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "[ERROR] $CONFIG_FILE not found"
+    exit 1
+fi
+
+# Check root
+if [ "$EUID" -ne 0 ]; then
+    echo "[ERROR] This script must be run as root"
+    exit 2
+fi
+
+# Providing Client Name
+if [ -z "$CLIENT_NAME" ]; then
+    CLIENT_NAME="$1"
+    if [ -z "$CLIENT_NAME" ]; then
+        echo "[INPUT] Please provide client name: "
+        read -r CLIENT_NAME
+        if [ -z "$CLIENT_NAME" ]; then
+            echo "[ERROR] Client name cannot be empty. Exiting."
+            exit 1
+        fi
+    fi
+fi
+
+# Providing remote ip
+if [ -z "$REMOTE_IP" ]; then
+    REMOTE_IP="$2"
+    if [ -z "$REMOTE_IP" ]; then
+        echo "[INPUT] Please provide client name: "
+        read -r REMOTE_IP
+        if [ -z "$REMOTE_IP" ]; then
+            echo "[ERROR] Remote ip cannot be empty. Exiting."
+            exit 1
+        fi
+    fi
+fi
+
+# Providing port
+if [ -z "$PORT" ]; then
+    PORT="$3"
+    if [ -z "$PORT" ]; then
+        echo "[INPUT] Please provide client name: "
+        read -r PORT
+        if [ -z "$PORT" ]; then
+            echo "[ERROR] Port cannot be empty. Exiting."
+            exit 1
+        fi
+    fi
+fi
+
+# Add client dir
+CLIENT_DIR="$LUMINA_DIR/$CLIENT_NAME"
+echo "[INFO] Creating client directory $CLIENT_DIR"
+if [ -d "$CLIENT_DIR" ]; then
+    echo "[ERROR] $CLIENT_DIR already exists"
+    exit 1
+fi
+mkdir -p "$CLIENT_DIR"
+echo "[INFO] Copying easy-rsa to $SERVER_DIR"
+cp -r "$EASY_RSA_DIR"/* "$CLIENT_DIR"
+# Create client key
+echo "[INFO] Creating client key"
+cd "$CLIENT_DIR"
+easyrsa init-pki
+EASYRSA_REQ_CN=$CLIENT_NAME easyrsa gen-req "$CLIENT_NAME" nopass <<< "$CLIENT_NAME"
+
+# Sing client certificate
+echo "[INFO] Signing client certificate"
+cd "$CA_MACHINE_DIR"
+EASYRSA_REQ_CN=$CLIENT_NAME easyrsa import-req "$CLIENT_DIR/pki/reqs/$CLIENT_NAME.req" "$CLIENT_NAME"
+EASYRSA_REQ_CN=$CLIENT_NAME easyrsa sign-req client "$CLIENT_NAME" <<< "yes"
+
+
+
+# ovpn file
+cat "[INFO] Creating ovpn file"
+cd "$LUMINA_DIR"
+echo <<EOF > "$CLIENT_NAME.ovpn"
+client
+dev tun
+proto udp
+remote $REMOTE_IP $PORT
+
+cipher AES-256-GCM
+
+EOF
+#!/bin/zsh
+#
 #   Name:   initServerPart.sh
 #   Author: Field Effect Transistor
 #   Desc:   Initialize Lumina openvpn server and ca-machine
@@ -177,22 +276,20 @@ cat << EOF > "$OPENVPN_SERVER_DIR/server.conf"
 ca ca.crt
 cert $SERVER_NAME.crt
 key $SERVER_NAME.key
-dh none
 
-ecdh-curve secp384r1
 tls-crypt ta.key
+
 cipher AES-256-GCM
 
 user nobody
 group nobody
-persist-key
-persist-tun
-
-keepalive 10 120
-dev tun
 
 config ip.conf
-topology subnet
+
+dev tun
+
+persist-key
+persist-tun
 
 client-to-client
 EOF
@@ -205,3 +302,96 @@ EOF
 
 # The end
 echo "[INFO] Exit"
+#!/bin/zsh
+#
+#   Name:   installEasyRsa.sh
+#   Author: Field Effect Transistor
+#   Desc:   Install easy-rsa to Lumina directory
+#   Creation Date: 06/05/25
+#
+
+# Load lumina.vars
+CONFIG_FILE="$(dirname "$0")/lumina.vars"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "[ERROR] $CONFIG_FILE not found"
+    exit 1
+fi
+
+# Clonning easy-rsa
+curl -SL "$EASY_RSA_URL" -o "/tmp/easy-rsa.zip"
+unzip "/tmp/easy-rsa.zip" -d "/tmp"
+mkdir -p "$EASY_RSA_DIR"
+mv "/tmp/easy-rsa-master/easyrsa3"/* "$EASY_RSA_DIR"
+mv "$EASY_RSA_DIR"/vars.example "$EASY_RSA_DIR"/vars
+rm -rf "/tmp/easy-rsa-master" "/tmp/easy-rsa.zip"
+#
+#   Name:   lumina.vars
+#   Author: Field Effect Transistor
+#   Desc:   Lumina variables
+#   Creation Date: 06/05/25
+#
+
+#   Working directory
+LUMINA_DIR="/root/.lumina"
+LUMINA_DIR_BACKUP="${LUMINA_DIR}.bak"
+
+#   Server Name
+SERVER_NAME="Lumina"
+
+#   Easy-rsa
+EASY_RSA_URL="https://github.com/OpenVPN/easy-rsa/archive/refs/heads/master.zip"
+EASY_RSA_DIR="$LUMINA_DIR-easy-rsa"
+
+#   CA-Machine
+CA_MACHINE_DIR="$LUMINA_DIR/ca-machine"
+
+#   OpenVPN Server
+OpenVPN_DIR="$LUMINA_DIR/openvpn"
+OPENVPN_SERVER_DIR="$OpenVPN_DIR/server"
+#!/bin/zsh
+#
+#   Name:   runOpenVPNServer.sh
+#   Author: Field Effect Transistor
+#   Desc:   run OpenVPN Server from $LUMINA directory
+#           You should run ./initServerPart.sh first
+#
+#   Creation Date: 06/05/25
+#
+
+# Load lumina.vars
+CONFIG_FILE="$(dirname "$0")/lumina.vars"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "[ERROR] $CONFIG_FILE not found"
+    exit 1
+fi
+
+# Check dependecies
+dependecies=("openvpn")
+all_installed=1
+
+for packet in "${dependecies[@]}"; do
+    if [ ! "$(pacman -Q $packet)" ]; then
+        all_installed=0
+        echo "[ERROR] $packet is not installed"
+    fi
+done
+
+if [ "$all_installed" -eq 0 ]; then
+    echo "[ERROR] Not all dependencies are installed. Exiting."
+    exit 1
+fi
+
+echo "[INFO] All dependecies are installed"
+
+# Check root
+if [ "$EUID" -ne 0 ]; then
+    echo "[ERROR] This script must be run as root"
+    exit 2
+fi
+
+cd "$OPENVPN_SERVER_DIR"
+openvpn "$OPENVPN_SERVER_DIR/server.conf"
