@@ -165,8 +165,8 @@ chown openvpn:network "$OPENVPN_SERVER_DIR/$SERVER_NAME.crt"
 # Configuring OpenVPN Server
 cat << EOF > "$OPENVPN_SERVER_DIR/server.conf"
 ca ca.crt
-cert Neon.crt
-key Neon.key
+cert $SERVER_NAME.crt
+key $SERVER_NAME.key
 dh dh.pem
 
 tls-crypt ta.key
