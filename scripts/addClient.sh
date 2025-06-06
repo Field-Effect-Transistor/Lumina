@@ -36,13 +36,13 @@ if [ -z "$CLIENT_NAME" ]; then
 fi
 
 # Providing remote ip
-if [ -z "$REMOTE_IP" ]; then
-    REMOTE_IP="$2"
-    if [ -z "$REMOTE_IP" ]; then
-        echo "[INPUT] Please provide server ip: "
-        read -r REMOTE_IP
-        if [ -z "$REMOTE_IP" ]; then
-            echo "[ERROR] Remote ip cannot be empty. Exiting."
+if [ -z "$HOST" ]; then
+    HOST="$2"
+    if [ -z "$HOST" ]; then
+        echo "[INPUT] Please provide server host: "
+        read -r HOST
+        if [ -z "$HOST" ]; then
+            echo "[ERROR] Server host cannot be empty. Exiting."
             exit 1
         fi
     fi
@@ -59,6 +59,19 @@ if [ -z "$PORT" ]; then
             exit 1
         fi
     fi
+fi
+
+# Providing Client ip to reservation
+if [ -z "$CLIENT_IP" ]; then
+    CLIENT="$4"
+    if [ -z "$CLIENT_IP"]; then
+        echo "[INPUT] Please provide client ip to reservation: "
+	read -r CLIENT_IP
+	if []; then
+	    echo "[ERROR] Client ip cannot be empty!"
+	    exit 1
+	fi
+    fi    
 fi
 
 # Add client dir
@@ -90,12 +103,12 @@ TLS_CRYPT_KEY="$(cat "$OPENVPN_SERVER_DIR/ta.key")"
 
 # ovpn file
 echo "[INFO] Creating ovpn file"
-cat << EOF > "$LUMINA_DIR/$CLIENT_NAME.ovpn"
+cat << EOF > "$LUMINA_DIR/$CLIENT_NAME/$CLIENT_NAME.ovpn"
 client
 dev tun
 proto udp
 
-remote $REMOTE_IP $PORT
+remote $HOST $PORT
 resolv-retry infinite
 remote-cert-tls server
 nobind
@@ -122,5 +135,9 @@ $TLS_CRYPT_KEY
 </tls-crypt>
 EOF
 
+# Address reservation
+echo << EOF >> "$CCD/$CLIENT_NAME.conf"
+ifconfig-push $CLIENT_IP $
+EOF
 # The end
 echo "[INFO] Exit"

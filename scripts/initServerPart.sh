@@ -195,11 +195,13 @@ config ip.conf
 topology subnet
 
 client-to-client
+ccd-exclusive
+client-config-dir $CCD
 EOF
 
 cat << EOF > "$OPENVPN_SERVER_DIR/ip.conf"
-port 443
-proto udp
+port $PORT
+proto $PROTOCOL
 server 10.8.0.0 255.255.255.0
 EOF
 
