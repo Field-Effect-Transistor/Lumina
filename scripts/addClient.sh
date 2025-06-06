@@ -74,6 +74,12 @@ if [ -z "$CLIENT_IP" ]; then
     fi    
 fi
 
+# Check if ip already reserved
+if ! grep -r -q "ifconfig-push $CLIENT_IP" "$CCD"; then
+    echo "[ERROR] $CLIENT_IP already reserved"
+    exit 1
+fi
+
 # Add client dir
 CLIENT_DIR="$LUMINA_DIR/$CLIENT_NAME"
 echo "[INFO] Creating client directory $CLIENT_DIR"
@@ -105,7 +111,7 @@ TLS_CRYPT_KEY="$(cat "$OPENVPN_SERVER_DIR/ta.key")"
 echo "[INFO] Creating ovpn file"
 cat << EOF > "$LUMINA_DIR/$CLIENT_NAME/$CLIENT_NAME.ovpn"
 client
-dev tun
+dev $TUN_NAME
 proto $PROTOCOL
 
 remote $HOST $PORT
@@ -137,7 +143,8 @@ EOF
 
 # Address reservation
 echo << EOF >> "$CCD/$CLIENT_NAME.conf"
-ifconfig-push $CLIENT_IP $
+ifconfig-push $CLIENT_IP $NETWORK
 EOF
+
 # The end
 echo "[INFO] Exit"

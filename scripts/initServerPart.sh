@@ -174,13 +174,13 @@ chown openvpn:network "$OPENVPN_SERVER_DIR/$SERVER_NAME.crt"
 # Configuring OpenVPN Server
 echo "[INFO] Configuring OpenVPN Server in $OPENVPN_SERVER_DIR/server.conf"
 cat << EOF > "$OPENVPN_SERVER_DIR/server.conf"
-ca ca.crt
-cert $SERVER_NAME.crt
-key $SERVER_NAME.key
+ca $OPENVPN_SERVER_DIR/ca.crt
+cert $OPENVPN_SERVER_DIR/$SERVER_NAME.crt
+key $OPENVPN_SERVER_DIR/$SERVER_NAME.key
 dh none
 
 ecdh-curve secp384r1
-tls-crypt ta.key
+tls-crypt $OPENVPN_SERVER_DIR/ta.key
 cipher AES-256-GCM
 
 user nobody
@@ -191,7 +191,7 @@ persist-tun
 keepalive 10 120
 dev tun
 
-config ip.conf
+config $OPENVPN_SERVER_DIR/ip.conf
 topology subnet
 
 client-to-client
@@ -202,8 +202,50 @@ EOF
 cat << EOF > "$OPENVPN_SERVER_DIR/ip.conf"
 port $PORT
 proto $PROTOCOL
-server 10.8.0.0 255.255.255.0
+server $NETWORK $NETMASK
 EOF
 
+# Create Service
+echo "[INFO] Creating systemd service"
+cat << EOF > "/etc/systemd/system/openvpn-$SERVER_NAME.service"
+[Unit]
+Description=Lumina OpenVPN Server (custom configuration)
+After=network-online.target
+Wants=network-online.target
+Documentation=man:openvpn(8)
+Documentation=https://community.openvpn.net/openvpn/wiki/Openvpn24ManPage
+Documentation=https://community.openvpn.net/openvpn/wiki/HOWTO
+
+[Service]
+Type=simple
+
+ExecStart=/usr/sbin/openvpn --config $OPENVPN_SERVER_DIR/server.conf 
+
+ExecReload=/bin/kill -HUP \$MAINPID
+
+Restart=on-failure
+RestartSec=5s
+
+User=root
+Group=root
+WorkingDirectory=$OPENVPN_SERVER_DIR
+
+CapabilityBoundingSet=CAP_IPC_LOCK CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_SYS_CHROOT CAP_SETUID CAP_SETGID CAP_DAC_OVERRIDE
+LimitNPROC=10
+DeviceAllow=/dev/null rw
+DeviceAllow=/dev/net/tun rw
+
+ProtectSystem=true
+ProtectHome=true
+PrivateTmp=true
+KillMode=process
+
+NotifyAccess=main
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+
 # The end
-echo "[INFO] Exit"
+echo "[INFO] Exit. Success"
