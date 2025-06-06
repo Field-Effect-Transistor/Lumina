@@ -132,8 +132,8 @@ EOF
 # Create CA
 echo "[INFO] Creating CA"
 cd "$CA_MACHINE_DIR"
-easyrsa init-pki
-EASYRSA_REQ_CN=$SERVER_NAME easyrsa build-ca nopass <<< "$SERVER_NAME"
+./easyrsa init-pki
+EASYRSA_REQ_CN=$SERVER_NAME ./easyrsa build-ca nopass <<< "$SERVER_NAME"
 
 # Create OpenVPN Server
 echo "[INFO] Copying ca.crt to $OPENVPN_SERVER_DIR"
@@ -148,8 +148,8 @@ echo "[INFO] Copying easy-rsa to $SERVER_DIR"
 cp -r "$EASY_RSA_DIR"/* "$SERVER_DIR"
 echo "[INFO] Creating server key"
 cd "$SERVER_DIR"
-easyrsa init-pki
-EASYRSA_REQ_CN=$SERVER_NAME easyrsa gen-req "$SERVER_NAME" nopass <<< "$SERVER_NAME"
+./easyrsa init-pki
+EASYRSA_REQ_CN=$SERVER_NAME ./easyrsa gen-req "$SERVER_NAME" nopass <<< "$SERVER_NAME"
 
 echo "[INFO] Copying server key to $OPENVPN_SERVER_DIR"
 cp "$SERVER_DIR/pki/private/$SERVER_NAME.key" "$OPENVPN_SERVER_DIR"
@@ -163,8 +163,8 @@ chown openvpn:network "$OPENVPN_SERVER_DIR/ta.key"
 # Sign server certificate
 echo "[INFO] Signing server certificate"
 cd "$CA_MACHINE_DIR"
-EASYRSA_REQ_CN=$SERVER_NAME easyrsa import-req "$SERVER_DIR/pki/reqs/$SERVER_NAME.req" "$SERVER_NAME"
-EASYRSA_REQ_CN=$SERVER_NAME easyrsa sign-req server "$SERVER_NAME" <<< "yes" <<< "yes"
+EASYRSA_REQ_CN=$SERVER_NAME ./easyrsa import-req "$SERVER_DIR/pki/reqs/$SERVER_NAME.req" "$SERVER_NAME"
+EASYRSA_REQ_CN=$SERVER_NAME ./easyrsa sign-req server "$SERVER_NAME" <<< "yes" <<< "yes"
 
 # Copying server certificate to openvpn server
 echo "[INFO] Copying server certificate to $OPENVPN_SERVER_DIR"

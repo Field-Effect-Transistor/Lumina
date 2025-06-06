@@ -87,14 +87,14 @@ cp -r "$EASY_RSA_DIR"/* "$CLIENT_DIR"
 # Create client key
 echo "[INFO] Creating client key"
 cd "$CLIENT_DIR"
-easyrsa init-pki
-EASYRSA_REQ_CN=$CLIENT_NAME easyrsa gen-req "$CLIENT_NAME" nopass <<< "$CLIENT_NAME"
+./easyrsa init-pki
+EASYRSA_REQ_CN=$CLIENT_NAME ./easyrsa gen-req "$CLIENT_NAME" nopass <<< "$CLIENT_NAME"
 
 # Sing client certificate
 echo "[INFO] Signing client certificate"
 cd "$CA_MACHINE_DIR"
-EASYRSA_REQ_CN=$CLIENT_NAME easyrsa import-req "$CLIENT_DIR/pki/reqs/$CLIENT_NAME.req" "$CLIENT_NAME"
-EASYRSA_REQ_CN=$CLIENT_NAME easyrsa sign-req client "$CLIENT_NAME" <<< "yes" <<< "yes"
+EASYRSA_REQ_CN=$CLIENT_NAME ./easyrsa import-req "$CLIENT_DIR/pki/reqs/$CLIENT_NAME.req" "$CLIENT_NAME"
+EASYRSA_REQ_CN=$CLIENT_NAME ./easyrsa sign-req client "$CLIENT_NAME" <<< "yes" <<< "yes"
 
 CA_SERTIFICATE="$(cat "$OPENVPN_SERVER_DIR/ca.crt")"
 CLIENT_CERT="$(cat "$CA_MACHINE_DIR/pki/issued/$CLIENT_NAME.crt")"
@@ -106,7 +106,7 @@ echo "[INFO] Creating ovpn file"
 cat << EOF > "$LUMINA_DIR/$CLIENT_NAME/$CLIENT_NAME.ovpn"
 client
 dev tun
-proto udp
+proto $PROTOCOL
 
 remote $HOST $PORT
 resolv-retry infinite
