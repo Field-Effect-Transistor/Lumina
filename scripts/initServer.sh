@@ -206,7 +206,7 @@ EOF
 
 # Create Service
 echo "[INFO] Creating systemd service"
-cat << EOF > "/etc/systemd/system/openvpn-$SERVER_NAME.service"
+cat << EOF > "$SERVICE_FILE"
 [Unit]
 Description=Lumina OpenVPN Server (custom configuration)
 After=network-online.target
@@ -235,7 +235,7 @@ DeviceAllow=/dev/null rw
 DeviceAllow=/dev/net/tun rw
 
 ProtectSystem=true
-ProtectHome=true
+#ProtectHome=true
 PrivateTmp=true
 KillMode=process
 
