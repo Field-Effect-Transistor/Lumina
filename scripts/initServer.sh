@@ -8,8 +8,11 @@
 
 set -e
 
+SCRIPTS_DIR=$(cd -- "$(dirname -- "$0")" &>/dev/null && pwd)
+echo "[INFO] Script directory: $SCRIPTS_DIR"
+
 # Load lumina.vars
-CONFIG_FILE="$(dirname "$0")/lumina.vars"
+CONFIG_FILE="$SCRIPTS_DIR/lumina.vars"
 if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
 else
@@ -247,5 +250,14 @@ EOF
 
 systemctl daemon-reload
 
+# Copying scripts
+echo "[INFO] Copying scripts to $LUMINA_DIR"
+cp -r "$SCRIPTS_DIR" "$LUMINA_DIR"
+SCRIPTS_DIR="$LUMINA_DIR/scripts"
+
+# Creating Admin User
+echo "[INFO] Creating admin user"
+CLIENT_NAME="$ADMIN_USER" CLIENT_IP="$ADMIN_IP" "$SCRIPTS_DIR/addClient.sh"
+
 # The end
-echo "[INFO] Exit. Success"
+echo "[INFO] Exit init Server script. Success"

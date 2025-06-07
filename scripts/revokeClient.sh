@@ -4,11 +4,14 @@
 #   Author: Field Effect Transistor
 #   Desc:   Revoke client from openvpn server
 #           ! U need to restart openvpn server service after revoking
+#           ! Havent tested yet
 #   Creation Date: 06/07/25
 #
 
+SCRIPTS_DIR=$(cd -- "$(dirname -- "$0")" &>/dev/null && pwd)
+
 # Load lumina.vars
-CONFIG_FILE="$(dirname "$0")/lumina.vars"
+CONFIG_FILE="$SCRIPTS_DIR/lumina.vars"
 if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
 else

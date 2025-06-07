@@ -7,8 +7,10 @@
 #   Creation Date: 06/05/25
 #
 
+SCRIPTS_DIR=$(cd -- "$(dirname -- "$0")" &>/dev/null && pwd)
+
 # Load lumina.vars
-CONFIG_FILE="$(dirname "$0")/lumina.vars"
+CONFIG_FILE="$SCRIPTS_DIR/lumina.vars"
 if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
 else
@@ -147,4 +149,4 @@ ifconfig-push $CLIENT_IP $NETMASK
 EOF
 
 # The end
-echo "[INFO] Exit"
+echo "[INFO] Exit add clien script. Success"
