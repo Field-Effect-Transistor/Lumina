@@ -173,6 +173,7 @@ chown openvpn:network "$OPENVPN_SERVER_DIR/$SERVER_NAME.crt"
 
 # Configuring OpenVPN Server
 echo "[INFO] Configuring OpenVPN Server in $OPENVPN_SERVER_DIR/server.conf"
+mkdir "$CCD"
 cat << EOF > "$OPENVPN_SERVER_DIR/server.conf"
 ca $OPENVPN_SERVER_DIR/ca.crt
 cert $OPENVPN_SERVER_DIR/$SERVER_NAME.crt
@@ -183,8 +184,6 @@ ecdh-curve secp384r1
 tls-crypt $OPENVPN_SERVER_DIR/ta.key
 cipher AES-256-GCM
 
-user nobody
-group nobody
 persist-key
 persist-tun
 
@@ -245,6 +244,7 @@ NotifyAccess=main
 [Install]
 WantedBy=multi-user.target
 EOF
+
 systemctl daemon-reload
 
 # The end

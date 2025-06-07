@@ -51,3 +51,5 @@ fi
 echo "[INFO] Copying crl.pem to $OPENVPN_SERVER_DIR"
 cp "$CA_MACHINE_DIR/pki/crl.pem" "$OPENVPN_SERVER_DIR/crl.pem"
 chown openvpn:network "$OPENVPN_SERVER_DIR/crl.pem"
+
+#! U need to restart openvpn server service after revoking

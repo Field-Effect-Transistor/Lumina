@@ -67,7 +67,7 @@ if [ -z "$CLIENT_IP" ]; then
     if [ -z "$CLIENT_IP"]; then
         echo "[INPUT] Please provide client ip to reservation: "
 	read -r CLIENT_IP
-	if []; then
+	if [ -z "$CLIENT_IP" ]; then
 	    echo "[ERROR] Client ip cannot be empty!"
 	    exit 1
 	fi
@@ -75,7 +75,7 @@ if [ -z "$CLIENT_IP" ]; then
 fi
 
 # Check if ip already reserved
-if ! grep -r -q "ifconfig-push $CLIENT_IP" "$CCD"; then
+if grep -r -q "ifconfig-push $CLIENT_IP" "$CCD"; then
     echo "[ERROR] $CLIENT_IP already reserved"
     exit 1
 fi
@@ -115,7 +115,7 @@ dev $TUN_NAME
 proto $PROTOCOL
 
 remote $HOST $PORT
-resolv-retry infinite
+#resolv-retry infinite
 remote-cert-tls server
 nobind
 
@@ -142,8 +142,8 @@ $TLS_CRYPT_KEY
 EOF
 
 # Address reservation
-echo << EOF >> "$CCD/$CLIENT_NAME.conf"
-ifconfig-push $CLIENT_IP $NETWORK
+cat << EOF > "$CCD/$CLIENT_NAME"
+ifconfig-push $CLIENT_IP $NETMASK
 EOF
 
 # The end
