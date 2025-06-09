@@ -94,6 +94,7 @@ case "$1" in
         checkRoot
         checkDependecies
 
+        mkdir -p "$FIREWALL"
         ipset save > "$GROUPS_FILE"
         iptables-save > "$IPTABLES_FILE"
     ;;
