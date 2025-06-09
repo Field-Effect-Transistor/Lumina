@@ -20,29 +20,19 @@ else
     exit 1
 fi
 
-# Check dependecies
-dependecies=("openvpn" "openssl" "git" "unzip" "curl")
-all_installed=1
-
-for packet in "${dependecies[@]}"; do
-    if [ ! "$(pacman -Q $packet)" ]; then
-        all_installed=0
-        echo "[ERROR] $packet is not installed"
-    fi
-done
-
-if [ "$all_installed" -eq 0 ]; then
-    echo "[ERROR] Not all dependencies are installed. Exiting."
+# Load libs
+if [ -f "$SCRIPTS_DIR/lib.sh" ]; then
+    source "$SCRIPTS_DIR/lib.sh"
+else
+    echo "[ERROR] $SCRIPTS_DIR/lib.sh not found"
     exit 1
 fi
 
-echo "[INFO] All dependecies are installed"
+# Check dependecies
+checkDependecies "openvpn" "openssl" "git" "unzip" "curl"
 
 # Check root
-if [ "$EUID" -ne 0 ]; then
-    echo "[ERROR] This script must be run as root"
-    exit 2
-fi
+checkRoot
 
 # Creating working directory
 if [ -d "$LUMINA_DIR" ]; then
@@ -196,7 +186,7 @@ dev tun
 config $OPENVPN_SERVER_DIR/ip.conf
 topology subnet
 
-client-to-client
+#client-to-client
 ccd-exclusive
 client-config-dir $CCD
 EOF

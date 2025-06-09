@@ -9,7 +9,7 @@
 
 SCRIPTS_DIR=$(cd -- "$(dirname -- "$0")" &>/dev/null && pwd)
 
-# Load lumina.vars
+# Load lumina.vars and libs
 CONFIG_FILE="$SCRIPTS_DIR/lumina.vars"
 if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
@@ -18,11 +18,16 @@ else
     exit 1
 fi
 
-# Check root
-if [ "$EUID" -ne 0 ]; then
-    echo "[ERROR] This script must be run as root"
-    exit 2
+# Load libs
+if [ -f "$SCRIPTS_DIR/lib.sh" ]; then
+    source "$SCRIPTS_DIR/lib.sh"
+else
+    echo "[ERROR] $SCRIPTS_DIR/lib.sh not found"
+    exit 1
 fi
+
+# Check root
+checkRoot
 
 # Providing Client Name
 if [ -z "$CLIENT_NAME" ]; then

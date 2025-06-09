@@ -4,7 +4,7 @@
 #   Author: Field Effect Transistor
 #   Desc:   run OpenVPN Server from $LUMINA directory
 #           You should run ./initServerPart.sh first
-#           !THIS SCRIPT CURRENTLY NOT WORKING
+#           !THIS SCRIPT CURRENTLY DO NOT WORKING
 #   Creation Date: 06/05/25
 #
 

@@ -18,11 +18,16 @@ else
     exit 1
 fi
 
-# Check root
-if [ "$EUID" -ne 0 ]; then
-    echo "[ERROR] This script must be run as root"
-    exit 2
+# Load libs
+if [ -f "$SCRIPTS_DIR/lib.sh" ]; then
+    source "$SCRIPTS_DIR/lib.sh"
+else
+    echo "[ERROR] $SCRIPTS_DIR/lib.sh not found"
+    exit 1
 fi
+
+# Check root
+checkRoot
 
 # Providing Server Name
 if [ -z "$SERVER_NAME" ]; then
