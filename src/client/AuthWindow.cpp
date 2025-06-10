@@ -114,20 +114,7 @@ void AuthWindow::onChangePageButtonClicked() {
 }
 
 void AuthWindow::onRestoreLinkClicked() {
-    QDialog restorePassword;
-    QVBoxLayout* layout = new QVBoxLayout(&restorePassword);
-    restorePassword.setWindowTitle("Restore password");
-    restorePassword.setLayout(layout);
-    layout->addStretch(1);
-    
-    QLineEdit* emailInput = new QLineEdit(&restorePassword);
-    emailInput->setPlaceholderText("Enter email");
-    layout->addWidget(emailInput);
-    QPushButton* sendButton = new QPushButton("Send", &restorePassword);
-    layout->addWidget(sendButton);
-    layout->addStretch(1);
-    restorePassword.setFixedSize(300, 100);
-    restorePassword.exec();
+    RestoreDialog(this).exec();
 }
 
 void AuthWindow::onLoginButtonClicked() {
@@ -135,5 +122,5 @@ void AuthWindow::onLoginButtonClicked() {
 }
 
 void AuthWindow::onRegButtonClicked() {
-    
+
 }

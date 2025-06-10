@@ -8,6 +8,7 @@ set( CMAKE_AUTORCC ON )
 add_executable( lumina_client 
     main_client.cpp
     AuthWindow.cpp
+    RestoreDialog.cpp
 #   resources
     resources/resources.qrc
 )

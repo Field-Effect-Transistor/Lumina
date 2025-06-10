@@ -16,6 +16,8 @@
 #include <QStackedWidget>
 #include <QDialog>
 
+#include "RestoreDialog.hpp"
+
 class AuthWindow : public QWidget {
     Q_OBJECT
 public:
