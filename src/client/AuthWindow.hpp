@@ -3,10 +3,8 @@
 #pragma once
 
 #include <QWidget>
-//#include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QLineEdit>
-#include <QStackedWidget>
 #include <QLabel>
 #include <QPixmap>
 #include <QPushButton>
@@ -15,6 +13,8 @@
 #include <QApplication>
 #include <QPalette>
 #include <QColor>
+#include <QStackedWidget>
+#include <QDialog>
 
 class AuthWindow : public QWidget {
     Q_OBJECT
@@ -26,13 +26,28 @@ private:
     QVBoxLayout* mainLayout;
     //QPushButton*    menu;
     QLabel* logo;
-    QGroupBox*  inputBox;
-    QVBoxLayout* inputLayout;
 
-    QLineEdit*  usernameInput;
-    QLineEdit*  passwordInput;
+    QStackedWidget* authWidget;
+
+    QGroupBox*  loginBox;
+    QVBoxLayout* loginLayout;
+    QLineEdit*  loginUsernameInput;
+    QLineEdit*  loginPasswordInput;
     QPushButton* loginButton;
-    
-    QPushButton* registerButton;
+    QPushButton* restoreLink;
 
+    QGroupBox*  regBox;
+    QVBoxLayout* regLayout;
+    QLineEdit*  regUsernameInput;
+    QLineEdit*  regPasswordInput;
+    QLineEdit*  regPasswordConfirmInput;
+    QPushButton* regButton;
+
+    QPushButton* changePageButton;
+
+private slots:
+    void onChangePageButtonClicked();
+    void onRestoreLinkClicked();
+    void onLoginButtonClicked();
+    void onRegButtonClicked();
 };
