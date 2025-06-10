@@ -3,64 +3,51 @@
 #include "AuthWindow.hpp"
 
 AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
-    setWindowTitle("Lumina - Auth");
-    // Закоментуйте або видаліть setFixedHeight, щоб дозволити зміну висоти
-    // setFixedHeight(350);
-    // setFixedWidth(300); // Також краще прибрати, якщо потрібна повна динамічність
+    setWindowTitle("Lumina - Sing in");
+    QPixmap logoPixmap;
+    if ( QApplication::palette().color(QPalette::Window).lightness() > 128 ) {
+        setWindowIcon(QIcon(":/icons/icon_light"));
+        logoPixmap.load(":/images/logo_light");
+    } else {
+        setWindowIcon(QIcon(":/icons/icon_dark"));
+        logoPixmap.load(":/images/logo_dark");
+    }
 
     mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(20, 20, 20, 20); // Додамо відступи для кращого вигляду
+    mainLayout->setContentsMargins(15, 15, 15, 15);
+
+    mainLayout->addStretch(1);
 
     logo = new QLabel(this);
-    QPixmap originalPixmap(":/images/logo"); // Завантажуємо оригінал один раз
-    if (originalPixmap.isNull()) {
-        logo->setText("Logo not found!"); // Обробка помилки
-    } else {
-        logo->setPixmap(originalPixmap);
+    if (logoPixmap.isNull()) {
+        logo->setText("Logo not found");
     }
-    logo->setAlignment(Qt::AlignCenter); // Вирівнюємо лого по центру
-
-    // === Ключовий момент для динамічного розміру ===
+    logo->setPixmap(logoPixmap);
     logo->setScaledContents(true);
-    // === === === === === === === === === === === ===
+    logo->setFixedSize(300, 100);
+    // logo->setFixedHeight(100);
+    mainLayout->addWidget(logo, 0, Qt::AlignCenter | Qt::AlignTop);
 
-    // Встановлюємо мінімальний розмір для лого, щоб воно не зникало зовсім
-    logo->setMinimumSize(50, 50); // Наприклад, 50x50 пікселів
+    mainLayout->addStretch(1);
 
-    // (Опціонально) Встановлюємо політику розміру для QLabel, щоб він міг розширюватися
-    //QSizePolicy logoSizePolicy = logo->sizePolicy();
-    //logoSizePolicy.setVerticalPolicy(QSizePolicy::Expanding); // Може розширюватися вертикально
-    //logoSizePolicy.setHorizontalPolicy(QSizePolicy::Expanding); // Може розширюватися горизонтально
-    //logo->setSizePolicy(logoSizePolicy);
-    // Часто це не потрібно, якщо layout дозволяє розтягування
-
-    mainLayout->addWidget(logo, 1); // Додаємо лого з коефіцієнтом розтягування 1
-
-    inputBox = new QGroupBox(this); // Не передаємо parent, бо він додається в layout
-    inputLayout = new QVBoxLayout(); // Не передаємо parent, бо він встановлюється для groupBox
-    inputBox->setLayout(inputLayout);
-    mainLayout->addWidget(inputBox, 0); // inputbox не буде розтягуватися, якщо лого розтягується
-
-    usernameInput = new QLineEdit(); // Не передаємо parent
+    inputBox = new QGroupBox(this);
+    inputLayout = new QVBoxLayout(inputBox);
+    usernameInput = new QLineEdit(this);
     usernameInput->setPlaceholderText("Username");
-    inputLayout->addWidget(usernameInput);
-
-    passwordInput = new QLineEdit(); // Не передаємо parent
+    passwordInput = new QLineEdit(this);
     passwordInput->setPlaceholderText("Password");
     passwordInput->setEchoMode(QLineEdit::Password);
+    loginButton = new QPushButton("Sing in", this);
+    registerButton = new QPushButton("Create account", this);
+    inputLayout->addWidget(usernameInput);
     inputLayout->addWidget(passwordInput);
-
-    loginButton = new QPushButton("Sign In"); // Не передаємо parent
     inputLayout->addWidget(loginButton);
+    mainLayout->addWidget(inputBox, 0, Qt::AlignTop);
 
-    registerButton = new QPushButton("Sign Up", this); // 'this' як parent, бо додається напряму в mainLayout
-    mainLayout->addWidget(registerButton, 0); // registerButton не буде розтягуватися
+    mainLayout->addStretch(1);
 
-    setLayout(mainLayout); // Встановлюємо головний layout для вікна AuthWindow
-
-    // Встановлюємо початковий розмір вікна, який може змінюватися користувачем
-    resize(300, 450); // Наприклад
-    // Встановлюємо мінімальний розмір вікна, щоб інтерфейс не "зламувався"
-    setMinimumSize(250, 350);
+    mainLayout->addWidget(registerButton);
+    setFixedHeight(500);
+    setFixedWidth(330);
+    
 }
-

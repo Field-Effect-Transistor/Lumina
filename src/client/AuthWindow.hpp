@@ -11,6 +11,10 @@
 #include <QPixmap>
 #include <QPushButton>
 #include <QGroupBox>
+#include <QIcon>
+#include <QApplication>
+#include <QPalette>
+#include <QColor>
 
 class AuthWindow : public QWidget {
     Q_OBJECT

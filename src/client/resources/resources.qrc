@@ -1,10 +1,12 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="/images">
-        <file alias="logo">images/lumina_logo.png</file>
+        <file alias="logo_light">images/lumina_logo_light_.png</file>
+        <file alias="logo_dark">images/lumina_logo_dark.png</file>
     </qresource>
     <qresource prefix="/icons">
-    
+        <file alias="icon_dark">icons/lumina_icon_dark.ico</file>
+        <file alias="icon_light">icons/lumina_icon_light.ico</file>
     </qresource>
     <qresource prefix="/themes">
     
