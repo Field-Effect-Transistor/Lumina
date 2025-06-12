@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "ConfigManager.hpp"
+#include "DatabaseManager.hpp"
 
 int main(int argc, char *argv[]) {
     std::string config_file_path = "";
@@ -23,7 +24,8 @@ int main(int argc, char *argv[]) {
     }
 
     ConfigManager::getInstance().loadConfig(config_file_path);
-    for (const auto& pair : ConfigManager::getInstance().getConfigMap()) {
+    const auto& config_map = ConfigManager::getInstance().getConfigMap();
+    for (const auto& pair : config_map) {
         std::cout << pair.first << ": ";
         if (pair.second.type() == typeid(std::string)) {
             std::cout << std::any_cast<std::string>(pair.second) << std::endl;
@@ -35,6 +37,8 @@ int main(int argc, char *argv[]) {
             std::cout << std::any_cast<bool>(pair.second) << std::endl;
         }
     }
+
+    DatabaseManager db(std::any_cast<std::string>(config_map.at("database::path")));
 
     return 0;
 }

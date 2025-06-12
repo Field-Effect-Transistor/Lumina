@@ -37,6 +37,9 @@ void ConfigManager::loadConfig(const std::string& filename) {
         // isConfigLoaded_ залишається false
         // throw; // Можна перекинути виняток далі, якщо потрібно
     }
+
+    isConfigLoaded_ = true;
+    file.close();
 }
 
 void ConfigManager::parseObj(const boost::json::object& obj, const std::string& base_key) {
@@ -69,4 +72,11 @@ void ConfigManager::parseObj(const boost::json::object& obj, const std::string& 
             configMap_[current_key] = nullptr;
         }
     }
+}
+
+const std::map<std::string, std::any>& ConfigManager::getConfigMap() const {
+    if (!isConfigLoaded_) {
+        throw "Config not loaded";
+    }
+    return configMap_;
 }

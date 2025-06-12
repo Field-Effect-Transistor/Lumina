@@ -19,8 +19,7 @@ public:
     ConfigManager& operator=(const ConfigManager&) = delete;
 
     void loadConfig(const std::string& filename);
-    const std::map<std::string, std::any>& getConfigMap() const {return configMap_;}; // <key, value>
-    std::string getDBPath() const;
+    const std::map<std::string, std::any>& getConfigMap() const;
 
 private:
     ConfigManager() {};

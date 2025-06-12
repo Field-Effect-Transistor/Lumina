@@ -8,6 +8,7 @@ find_package( CURL REQUIRED )
 add_executable( lumina_server 
     main_server.cpp
     ConfigManager.cpp
+    DatabaseManager.cpp
 )
 
 target_link_libraries( lumina_server
