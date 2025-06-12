@@ -1,0 +1,44 @@
+{
+    "application_name": "Lumina VPN Suite",
+    "version": "1.0.2-alpha",
+    "debug_mode": true,
+    "logging": {
+      "enabled": true,
+      "level": "INFO",
+      "file_path": "/var/log/lumina/app.log",
+      "max_size_mb": 100
+    },
+    "server_settings": {
+      "host": "0.0.0.0",
+      "port": 8443,
+      "tls": {
+        "certificate_path": "/etc/lumina/certs/server.crt",
+        "private_key_path": "/etc/lumina/certs/server.key",
+        "ca_bundle_path": null
+      },
+      "max_connections": 1000,
+      "connection_timeout_ms": 30000
+    },
+    "database": {
+      "type": "sqlite",
+      "path": "/etc/lumina/server/lumina.db",
+      "timeout_ms": 5000,
+      "pool_size": 5
+    },
+    "openvpn_management": {
+      "host": "127.0.0.1",
+      "port": 7505,
+      "password_file": "/etc/lumina/openvpn/management.pwd"
+    },
+    "features_enabled": [
+      "user_registration",
+      "group_management",
+      "vpn_config_distribution"
+    ],
+    "ui_settings": {
+      "default_theme": "dark",
+      "font_size_pt": 10.5,
+      "show_tooltips": true,
+      "experimental_feature_flag": null
+    }
+}
