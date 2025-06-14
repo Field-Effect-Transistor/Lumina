@@ -3,6 +3,7 @@
 #include "DatabaseManager.hpp"
 
 DatabaseManager::DatabaseManager(const std::string& db_path) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     std::cout << "[INFO] DB oppening" << std::endl;    
 
     std::filesystem::path db_path_fs(db_path);
@@ -146,7 +147,13 @@ void finalize_statement(sqlite3_stmt* stmt, const std::string& operation_name, s
 }
 
 
-std::optional<int> DatabaseManager::addUser(const std::string& email, const std::string& password_hash, const std::string& salt, const std::string& initial_status) {
+std::optional<int> DatabaseManager::addUser(
+    const std::string& email,
+    const std::string& password_hash,
+    const std::string& salt,
+    const std::string& initial_status
+) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "INSERT INTO Users (email, password_hash, salt, status) VALUES (?, ?, ?, ?);";
     sqlite3_stmt* stmt = nullptr;
     int new_user_id = -1;
@@ -177,6 +184,7 @@ std::optional<int> DatabaseManager::addUser(const std::string& email, const std:
 }
 
 bool DatabaseManager::emailExists(const std::string& email) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT 1 FROM Users WHERE email = ? LIMIT 1;";
     sqlite3_stmt* stmt = nullptr;
     bool exists = false;
@@ -220,6 +228,7 @@ DatabaseManager::UserRecord DatabaseManager::fillUserRecordFromStatement(sqlite3
 }
 
 std::optional<DatabaseManager::UserRecord> DatabaseManager::getUserByEmail(const std::string& email) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT id, email, password_hash, salt, is_verified, vpn_ip, created_at, updated_at, last_login, status FROM Users WHERE email = ?;";
     sqlite3_stmt* stmt = nullptr;
     std::optional<UserRecord> userRecord = std::nullopt;
@@ -245,6 +254,7 @@ std::optional<DatabaseManager::UserRecord> DatabaseManager::getUserByEmail(const
 }
 
 std::optional<DatabaseManager::UserRecord> DatabaseManager::getUserById(int user_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT id, email, password_hash, salt, is_verified, vpn_ip, created_at, updated_at, last_login, status FROM Users WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
     std::optional<UserRecord> userRecord = std::nullopt;
@@ -270,6 +280,7 @@ std::optional<DatabaseManager::UserRecord> DatabaseManager::getUserById(int user
 }
 
 bool DatabaseManager::updateUserPassword(int user_id, const std::string& new_password_hash, const std::string& new_salt) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // updated_at оновиться автоматично завдяки тригеру
     const char* sql = "UPDATE Users SET password_hash = ?, salt = ? WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
@@ -298,6 +309,7 @@ bool DatabaseManager::updateUserPassword(int user_id, const std::string& new_pas
 }
 
 bool DatabaseManager::setUserVerified(int user_id, bool is_verified) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // updated_at оновиться автоматично завдяки тригеру
     const char* sql = "UPDATE Users SET is_verified = ?, status = CASE WHEN ? = 1 THEN 'ACTIVE' ELSE status END WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
@@ -326,6 +338,7 @@ bool DatabaseManager::setUserVerified(int user_id, bool is_verified) {
 }
 
 bool DatabaseManager::updateUserStatus(int user_id, const std::string& new_status) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // updated_at оновиться автоматично завдяки тригеру
     const char* sql = "UPDATE Users SET status = ? WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
@@ -353,6 +366,7 @@ bool DatabaseManager::updateUserStatus(int user_id, const std::string& new_statu
 }
 
 bool DatabaseManager::updateUserLastLogin(int user_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // updated_at оновиться автоматично завдяки тригеру, але last_login - окреме поле
     const char* sql = "UPDATE Users SET last_login = CURRENT_TIMESTAMP WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
@@ -379,6 +393,7 @@ bool DatabaseManager::updateUserLastLogin(int user_id) {
 }
 
 bool DatabaseManager::assignVpnIpToUser(int user_id, const std::string& vpn_ip) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // updated_at оновиться автоматично завдяки тригеру
     const char* sql = "UPDATE Users SET vpn_ip = ? WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
@@ -406,6 +421,7 @@ bool DatabaseManager::assignVpnIpToUser(int user_id, const std::string& vpn_ip) 
 }
 
 std::optional<std::string> DatabaseManager::getVpnIpForUser(int user_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT vpn_ip FROM Users WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
     std::optional<std::string> vpn_ip_opt = std::nullopt;
@@ -434,6 +450,7 @@ std::optional<std::string> DatabaseManager::getVpnIpForUser(int user_id) {
 }
 
 bool DatabaseManager::deleteUser(int user_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // Завдяки ON DELETE CASCADE, пов'язані токени та членство в групах будуть видалені автоматично
     const char* sql = "DELETE FROM Users WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
@@ -459,15 +476,6 @@ bool DatabaseManager::deleteUser(int user_id) {
     return success;
 }
 
-// DatabaseManager.cpp
-#include "DatabaseManager.hpp"
-#include <algorithm> // для std::sort, std::find
-#include <set>       // для ефективного зберігання та пошуку зайнятих суфіксів
-
-// ... (ваш конструктор, деструктор та інші методи) ...
-
-// Допоміжна функція для отримання суфікса IP з повного рядка IP
-// Повертає -1 при помилці
 int extractIpSuffix(const std::string& full_ip, const std::string& network_prefix) {
     if (full_ip.rfind(network_prefix, 0) == 0) { // Перевіряє, чи починається рядок з префікса
         std::string suffix_str = full_ip.substr(network_prefix.length());
@@ -487,6 +495,7 @@ int extractIpSuffix(const std::string& full_ip, const std::string& network_prefi
 
 // Отримує суфікс останньої IP-адреси, призначеної останньому створеному користувачеві
 std::optional<int> DatabaseManager::getLastAssignedIpSuffix(const std::string& network_prefix) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // Знаходимо користувача, створеного останнім, у якого є vpn_ip
     const char* sql = "SELECT vpn_ip FROM Users WHERE vpn_ip IS NOT NULL ORDER BY created_at DESC, id DESC LIMIT 1;";
     sqlite3_stmt* stmt = nullptr;
@@ -518,6 +527,7 @@ std::optional<int> DatabaseManager::getLastAssignedIpSuffix(const std::string& n
 
 // Отримує всі призначені IP-суфікси
 std::vector<int> DatabaseManager::getAllAssignedIpSuffixes(const std::string& network_prefix) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT vpn_ip FROM Users WHERE vpn_ip IS NOT NULL;";
     sqlite3_stmt* stmt = nullptr;
     std::vector<int> assigned_suffixes;
@@ -549,6 +559,7 @@ std::vector<int> DatabaseManager::getAllAssignedIpSuffixes(const std::string& ne
 
 
 std::optional<std::string> DatabaseManager::findFreeVpnIp(const std::string& network_prefix) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     std::cout << "[INFO] Searching for a free VPN IP with prefix: " << network_prefix << std::endl;
 
     std::optional<int> last_assigned_suffix_opt = getLastAssignedIpSuffix(network_prefix);
@@ -629,6 +640,7 @@ bool DatabaseManager::addAuthToken(
     const std::string& token_type,
     int validity_seconds
 ) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // Розраховуємо expires_at
     // Використовуємо SQLite функцію datetime('now', '+X seconds')
     std::string sql_insert =
@@ -676,6 +688,7 @@ std::optional<DatabaseManager::AuthTokenRecord> DatabaseManager::getValidAuthTok
     const std::string& token_value_hash,
     const std::string& token_type
 ) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // Перевіряємо, що токен не використаний і термін дії не закінчився
     const char* sql =
         "SELECT id, user_id, token_value_hash, token_type, created_at, expires_at, is_used "
@@ -706,6 +719,7 @@ std::optional<DatabaseManager::AuthTokenRecord> DatabaseManager::getValidAuthTok
 }
 
 bool DatabaseManager::markAuthTokenAsUsed(const std::string& token_value_hash) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "UPDATE AuthTokens SET is_used = 1 WHERE token_value_hash = ? AND is_used = 0;"; // Додаткова умова is_used = 0 для ідемпотентності
     sqlite3_stmt* stmt = nullptr;
 
@@ -731,6 +745,7 @@ bool DatabaseManager::markAuthTokenAsUsed(const std::string& token_value_hash) {
 }
 
 bool DatabaseManager::invalidateUserAuthTokens(int user_id, const std::string& token_type) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // Позначаємо всі активні токени певного типу для користувача як використані
     const char* sql = "UPDATE AuthTokens SET is_used = 1 WHERE user_id = ? AND token_type = ? AND is_used = 0 AND expires_at > datetime('now');";
     sqlite3_stmt* stmt = nullptr;
@@ -762,6 +777,7 @@ bool DatabaseManager::invalidateUserAuthTokens(int user_id, const std::string& t
 }
 
 int DatabaseManager::deleteExpiredAuthTokens() {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "DELETE FROM AuthTokens WHERE expires_at <= datetime('now') OR is_used = 1;";
     sqlite3_stmt* stmt = nullptr; // Хоча для sqlite3_exec він не потрібен, але для консистенції
                                  // можна було б також використовувати prepare/step/finalize
@@ -781,7 +797,13 @@ int DatabaseManager::deleteExpiredAuthTokens() {
     return changes_after - changes_before; // Кількість видалених рядків
 }
 
-bool DatabaseManager::addRefreshToken(int user_id, const std::string& token_hash, const std::string& device_info, int validity_seconds) {
+bool DatabaseManager::addRefreshToken(
+    int user_id,
+    const std::string& token_hash,
+    const std::string& device_info,
+    int validity_seconds
+) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     std::string sql_insert =
         "INSERT INTO RefreshTokens (user_id, token_hash, device_info, expires_at) "
         "VALUES (?, ?, ?, datetime('now', '+" + std::to_string(validity_seconds) + " seconds'));";
@@ -814,7 +836,7 @@ bool DatabaseManager::addRefreshToken(int user_id, const std::string& token_hash
 }
 
 // Допоміжна функція для заповнення RefreshTokenRecord
-DatabaseManager::RefreshTokenRecord fillRefreshTokenRecordFromStatement(sqlite3_stmt* stmt) {
+DatabaseManager::RefreshTokenRecord DatabaseManager::fillRefreshTokenRecordFromStatement(sqlite3_stmt* stmt) {
     DatabaseManager::RefreshTokenRecord token;
     token.id = sqlite3_column_int(stmt, 0);
     token.user_id = sqlite3_column_int(stmt, 1);
@@ -830,6 +852,7 @@ DatabaseManager::RefreshTokenRecord fillRefreshTokenRecordFromStatement(sqlite3_
 }
 
 std::optional<DatabaseManager::RefreshTokenRecord> DatabaseManager::getValidRefreshTokenByHash(const std::string& token_hash) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql =
         "SELECT id, user_id, token_hash, device_info, created_at, expires_at, is_revoked, last_used_at "
         "FROM RefreshTokens "
@@ -858,6 +881,7 @@ std::optional<DatabaseManager::RefreshTokenRecord> DatabaseManager::getValidRefr
 }
 
 bool DatabaseManager::revokeRefreshToken(const std::string& token_hash) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "UPDATE RefreshTokens SET is_revoked = 1 WHERE token_hash = ? AND is_revoked = 0;";
     sqlite3_stmt* stmt = nullptr;
 
@@ -883,6 +907,7 @@ bool DatabaseManager::revokeRefreshToken(const std::string& token_hash) {
 }
 
 bool DatabaseManager::revokeAllRefreshTokensForUser(int user_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "UPDATE RefreshTokens SET is_revoked = 1 WHERE user_id = ? AND is_revoked = 0 AND expires_at > datetime('now');";
     sqlite3_stmt* stmt = nullptr;
 
@@ -909,6 +934,7 @@ bool DatabaseManager::revokeAllRefreshTokensForUser(int user_id) {
 }
 
 bool DatabaseManager::updateRefreshTokenLastUsed(const std::string& token_hash) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "UPDATE RefreshTokens SET last_used_at = CURRENT_TIMESTAMP WHERE token_hash = ?;";
     sqlite3_stmt* stmt = nullptr;
 
@@ -934,6 +960,7 @@ bool DatabaseManager::updateRefreshTokenLastUsed(const std::string& token_hash) 
 }
 
 int DatabaseManager::deleteExpiredOrRevokedRefreshTokens() {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "DELETE FROM RefreshTokens WHERE expires_at <= datetime('now') OR is_revoked = 1;";
     // Для простоти, як і раніше, можна використати sqlite3_exec,
     // але для підрахунку видалених рядків краще так:
@@ -990,6 +1017,7 @@ std::optional<int> DatabaseManager::createGroup(
     const std::optional<std::string>& password_hash, // Додано
     const std::optional<std::string>& salt           // Додано
 ) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "INSERT INTO Groups (name, owner_user_id, description, max_members, password_hash, salt) VALUES (?, ?, ?, ?, ?, ?);";
     sqlite3_stmt* stmt = nullptr;
     int new_group_id = -1;
@@ -1051,6 +1079,7 @@ std::optional<int> DatabaseManager::createGroup(
 }
 
 bool DatabaseManager::groupNameExists(const std::string& group_name) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT 1 FROM Groups WHERE name = ? LIMIT 1;";
     sqlite3_stmt* stmt = nullptr;
     bool exists = false;
@@ -1076,6 +1105,7 @@ bool DatabaseManager::groupNameExists(const std::string& group_name) {
 }
 
 std::optional<DatabaseManager::GroupRecord> DatabaseManager::getGroupById(int group_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT id, name, password_hash, salt, owner_user_id, max_members, description, created_at, updated_at FROM Groups WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
     std::optional<GroupRecord> groupRecord = std::nullopt;
@@ -1101,6 +1131,7 @@ std::optional<DatabaseManager::GroupRecord> DatabaseManager::getGroupById(int gr
 }
 
 std::optional<DatabaseManager::GroupRecord> DatabaseManager::getGroupByName(const std::string& group_name) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT id, name, password_hash, salt, owner_user_id, max_members, description, created_at, updated_at FROM Groups WHERE name = ?;";
     sqlite3_stmt* stmt = nullptr;
     std::optional<GroupRecord> groupRecord = std::nullopt;
@@ -1128,6 +1159,7 @@ std::optional<DatabaseManager::GroupRecord> DatabaseManager::getGroupByName(cons
 // Для updateGroupInfo, якщо ви дозволяєте змінювати пароль, вам також потрібно передавати новий хеш та сіль.
 // Або мати окремий метод updateGroupPassword. Для простоти, припустимо, пароль не змінюється тут.
 bool DatabaseManager::updateGroupInfo(int group_id, const std::string& new_name, const std::optional<std::string>& new_description, int new_max_members) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // updated_at оновиться автоматично завдяки тригеру
     const char* sql = "UPDATE Groups SET name = ?, description = ?, max_members = ? WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
@@ -1161,6 +1193,7 @@ bool DatabaseManager::updateGroupInfo(int group_id, const std::string& new_name,
 }
 
 bool DatabaseManager::deleteGroup(int group_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // Завдяки ON DELETE CASCADE в GroupMembers, всі члени будуть видалені
     // Але ON DELETE RESTRICT для owner_user_id в Groups може запобігти цьому,
     // якщо є інші залежності, які ви не вказали.
@@ -1191,6 +1224,7 @@ bool DatabaseManager::deleteGroup(int group_id) {
 }
 
 bool DatabaseManager::addUserToGroup(int group_id, int user_id /*, const std::string& role = "MEMBER" */) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // Якщо ви повернете ролі, розкоментуйте та додайте параметр role
     // const char* sql = "INSERT INTO GroupMembers (group_id, user_id, role_in_group) VALUES (?, ?, ?);";
     const char* sql = "INSERT INTO GroupMembers (group_id, user_id) VALUES (?, ?);";
@@ -1220,6 +1254,7 @@ bool DatabaseManager::addUserToGroup(int group_id, int user_id /*, const std::st
 }
 
 bool DatabaseManager::removeUserFromGroup(int group_id, int user_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "DELETE FROM GroupMembers WHERE group_id = ? AND user_id = ?;";
     sqlite3_stmt* stmt = nullptr;
 
@@ -1246,6 +1281,7 @@ bool DatabaseManager::removeUserFromGroup(int group_id, int user_id) {
 }
 
 bool DatabaseManager::isUserInGroup(int user_id, int group_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT 1 FROM GroupMembers WHERE user_id = ? AND group_id = ? LIMIT 1;";
     sqlite3_stmt* stmt = nullptr;
     bool in_group = false;
@@ -1272,6 +1308,7 @@ bool DatabaseManager::isUserInGroup(int user_id, int group_id) {
 }
 
 std::vector<DatabaseManager::UserRecord> DatabaseManager::getGroupMembers(int group_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     // Нам потрібно буде JOIN з таблицею Users, щоб отримати повні дані користувачів
     const char* sql = "SELECT u.id, u.email, u.password_hash, u.salt, u.is_verified, u.vpn_ip, u.created_at, u.updated_at, u.last_login, u.status "
                       "FROM Users u JOIN GroupMembers gm ON u.id = gm.user_id "
@@ -1301,6 +1338,7 @@ std::vector<DatabaseManager::UserRecord> DatabaseManager::getGroupMembers(int gr
 }
 
 std::vector<DatabaseManager::GroupRecord> DatabaseManager::getUserGroups(int user_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT g.id, g.name, g.password_hash, g.salt, g.owner_user_id, g.max_members, g.description, g.created_at, g.updated_at "
                       "FROM Groups g JOIN GroupMembers gm ON g.id = gm.group_id "
                       "WHERE gm.user_id = ?;";
@@ -1329,6 +1367,7 @@ std::vector<DatabaseManager::GroupRecord> DatabaseManager::getUserGroups(int use
 }
 
 int DatabaseManager::getGroupMemberCount(int group_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT COUNT(user_id) FROM GroupMembers WHERE group_id = ?;";
     sqlite3_stmt* stmt = nullptr;
     int count = 0;
@@ -1356,6 +1395,7 @@ int DatabaseManager::getGroupMemberCount(int group_id) {
 }
 
 std::vector<DatabaseManager::GroupRecord> DatabaseManager::getGroupsOwnedByUser(int owner_user_id) {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT id, name, password_hash, salt, owner_user_id, max_members, description, created_at, updated_at "
                       "FROM Groups WHERE owner_user_id = ?;";
     sqlite3_stmt* stmt = nullptr;

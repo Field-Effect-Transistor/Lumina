@@ -24,27 +24,32 @@ int main(int argc, char *argv[]) {
     }
 
     ConfigManager::getInstance().loadConfig(config_file_path);
-    const auto& config_map = ConfigManager::getInstance().getConfigMap();
-    for (const auto& pair : config_map) {
-        std::cout << pair.first << ": ";
-        if (pair.second.type() == typeid(std::string)) {
-            std::cout << std::any_cast<std::string>(pair.second) << std::endl;
-        } else if (pair.second.type() == typeid(int64_t)) {
-            std::cout << std::any_cast<int64_t>(pair.second) << std::endl;
-        } else if (pair.second.type() == typeid(double)) {
-            std::cout << std::any_cast<double>(pair.second) << std::endl;
-        } else if (pair.second.type() == typeid(bool)) {
-            std::cout << std::any_cast<bool>(pair.second) << std::endl;
+
+    auto config_map = ConfigManager::getInstance().getConfigMap();
+    for (const auto& [key, value] : config_map) {
+        try {
+            std::cout << key << ": " << std::any_cast<std::string>(value) << std::endl;
+        } catch (const std::bad_any_cast& e) {
+            std::cerr << "[ConfigManager WARNING] Failed to cast config value for key '" << key << "' to requested type: " << e.what() << std::endl;
         }
     }
 
-    auto db_path = config_map.find("database::path");
     std::string db_path_str;
-    if (db_path == config_map.end()) {
-        db_path_str = "/etc/lumina/server/lumina.db";
+    auto db_path_opt = ConfigManager::getInstance().getValue<std::string>("database::path"); // Виправлений ключ
+
+    if (db_path_opt) { // Перевіряємо, чи std::optional містить значення
+        db_path_str = *db_path_opt; // Розіменовуємо optional, щоб отримати значення
+        std::cout << "Database path from config: " << db_path_str << std::endl;
     } else {
-        db_path_str = std::any_cast<std::string>(db_path->second);
+        db_path_str = "/etc/lumina/server/lumina.db"; // Значення за замовчуванням
+        std::cout << "Database path not found in config, using default: " << db_path_str << std::endl;
     }
+    // Перевірка, чи шлях не порожній перед створенням DatabaseManager (на випадок, якщо і в конфігу порожньо, і дефолтний не підходить)
+    if (db_path_str.empty()) {
+        std::cerr << "Critical error: Database path is empty." << std::endl;
+        return 1;
+    }
+
     DatabaseManager db(db_path_str);
 
     return 0;

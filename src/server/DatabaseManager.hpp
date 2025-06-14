@@ -14,34 +14,10 @@
 #include <algorithm>
 #include <set>
 #include <ctime>
+#include <mutex>
 
 class DatabaseManager {
-private:
-    sqlite3* db_;
-    char* zErrMsg = 0;
-    int rc;
-
-    //  User Table Methods
-    std::optional<int> getLastAssignedIpSuffix(const std::string& network_prefix);
-    std::vector<int> getAllAssignedIpSuffixes(const std::string& network_prefix);
-
 public:
-    DatabaseManager(const std::string& db_path);
-    ~DatabaseManager();
-
-    struct UserRecord {
-        int id;
-        std::string email;
-        std::string password_hash;
-        std::string salt;
-        bool is_verified; // У базі це INTEGER 0 або 1
-        std::optional<std::string> vpn_ip; // Може бути NULL
-        std::string created_at;
-        std::string updated_at;
-        std::optional<std::string> last_login; // Може бути NULL
-        std::string status;
-    };
-
     struct AuthTokenRecord {
         int id;
         int user_id;
@@ -75,6 +51,38 @@ public:
         std::string updated_at;
     };
 
+private:
+    sqlite3* db_;
+    char* zErrMsg = 0;
+    int rc;
+    mutable std::mutex db_mutex_;
+
+    //  User Table Methods
+    std::optional<int> getLastAssignedIpSuffix(const std::string& network_prefix);
+    std::vector<int> getAllAssignedIpSuffixes(const std::string& network_prefix);
+
+    struct UserRecord {
+        int id;
+        std::string email;
+        std::string password_hash;
+        std::string salt;
+        bool is_verified; // У базі це INTEGER 0 або 1
+        std::optional<std::string> vpn_ip; // Може бути NULL
+        std::string created_at;
+        std::string updated_at;
+        std::optional<std::string> last_login; // Може бути NULL
+        std::string status;
+    };
+
+    UserRecord fillUserRecordFromStatement(sqlite3_stmt* stmt);
+    AuthTokenRecord fillAuthTokenRecordFromStatement(sqlite3_stmt* stmt);
+    GroupRecord fillGroupRecordFromStatement(sqlite3_stmt* stmt);
+    RefreshTokenRecord fillRefreshTokenRecordFromStatement(sqlite3_stmt* stmt);
+
+public:
+    DatabaseManager(const std::string& db_path);
+    ~DatabaseManager();
+
 //  Users Table Methods
 
     std::optional<int> addUser(
@@ -84,7 +92,6 @@ public:
         const std::string& initial_status
     );
     bool emailExists(const std::string& email);
-    UserRecord fillUserRecordFromStatement(sqlite3_stmt* stmt);
     std::optional<UserRecord> getUserByEmail(const std::string& email);
     std::optional<UserRecord> getUserById(int user_id);
     bool updateUserPassword(
@@ -108,7 +115,6 @@ public:
         const std::string& token_type,
         int validity_seconds
     );
-    AuthTokenRecord fillAuthTokenRecordFromStatement(sqlite3_stmt* stmt);
     std::optional<AuthTokenRecord> getValidAuthTokenByHash(
         const std::string& token_value_hash,
         const std::string& token_type
@@ -133,7 +139,6 @@ public:
 
     //  Group Table Methods
 
-    GroupRecord fillGroupRecordFromStatement(sqlite3_stmt* stmt);
     std::optional<int> createGroup(
         const std::string& group_name,
         int owner_user_id,

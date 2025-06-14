@@ -9,6 +9,7 @@ ConfigManager& ConfigManager::getInstance() {
 }
 
 void ConfigManager::loadConfig(const std::string& filename) {
+    std::lock_guard<std::mutex> lock(configMutex_);
     std::ifstream file(filename);
     if (!file.is_open()) {
         // Краще кидати виняток або повертати false і обробляти це
@@ -74,9 +75,29 @@ void ConfigManager::parseObj(const boost::json::object& obj, const std::string& 
     }
 }
 
-const std::map<std::string, std::any>& ConfigManager::getConfigMap() const {
+template<typename T>
+std::optional<T> ConfigManager::getValue(const std::string& key) const {
+    std::lock_guard<std::mutex> lock(configMutex_);
+
     if (!isConfigLoaded_) {
-        throw "Config not loaded";
+        std::cerr << "[ConfigManager WARNING] Attempting to get value '" << key << "' but config is not loaded." << std::endl;
+        return std::nullopt;
     }
-    return configMap_;
+
+    auto it = configMap_.find(key);
+    if (it != configMap_.end()) {
+        try {
+            return std::any_cast<T>(it->second);
+        } catch (const std::bad_any_cast& e) {
+            std::cerr << "[ConfigManager WARNING] Failed to cast config value for key '" << key << "' to requested type: " << e.what() << std::endl;
+            return std::nullopt;
+        }
+    }
+    
+    return std::nullopt;
 }
+
+template std::optional<std::string> ConfigManager::getValue<std::string>(const std::string& key) const;
+template std::optional<int> ConfigManager::getValue<int>(const std::string& key) const;
+template std::optional<bool> ConfigManager::getValue<bool>(const std::string& key) const;
+template std::optional<double> ConfigManager::getValue<double>(const std::string& key) const;
