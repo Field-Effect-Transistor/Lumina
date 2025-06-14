@@ -16,7 +16,7 @@ RestoreDialog::RestoreDialog(QWidget *parent) : QDialog(parent) {
     layout->addStretch(1);
     setFixedSize(300, 100);
 
-    connect(sendButton, &QPushButton::clicked, this, RestoreDialog::onSendButtonClicked);
+    connect(sendButton, &QPushButton::clicked, this, &RestoreDialog::onSendButtonClicked);
 }
 
 void RestoreDialog::onSendButtonClicked() {
