@@ -38,7 +38,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    DatabaseManager db(std::any_cast<std::string>(config_map.at("database::path")));
+    auto db_path = config_map.find("database::path");
+    std::string db_path_str;
+    if (db_path == config_map.end()) {
+        db_path_str = "/etc/lumina/server/lumina.db";
+    } else {
+        db_path_str = std::any_cast<std::string>(db_path->second);
+    }
+    DatabaseManager db(db_path_str);
 
     return 0;
 }

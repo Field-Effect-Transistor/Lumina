@@ -1,6 +1,8 @@
 {
     "database":{
-        "path":"/etc/lumina/server/lumina.db",
-        "timeout":5000
+        "path":"/etc/lumina/server/lumina.db"
+    },
+    "tls":{
+        "port": 443
     }
 }
