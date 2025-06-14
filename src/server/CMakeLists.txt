@@ -9,6 +9,8 @@ add_executable( lumina_server
     main_server.cpp
     ConfigManager.cpp
     DatabaseManager.cpp
+    TlsSession.cpp
+    LuminaTlsServer.cpp
 )
 
 target_link_libraries( lumina_server

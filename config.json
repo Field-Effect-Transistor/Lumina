@@ -1,4 +1,5 @@
 {
+    "lumina_dir":"/etc/lumina",
     "database":{
         "path":"/etc/lumina/server/lumina.db"
     },

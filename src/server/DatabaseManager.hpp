@@ -51,16 +51,6 @@ public:
         std::string updated_at;
     };
 
-private:
-    sqlite3* db_;
-    char* zErrMsg = 0;
-    int rc;
-    mutable std::mutex db_mutex_;
-
-    //  User Table Methods
-    std::optional<int> getLastAssignedIpSuffix(const std::string& network_prefix);
-    std::vector<int> getAllAssignedIpSuffixes(const std::string& network_prefix);
-
     struct UserRecord {
         int id;
         std::string email;
@@ -73,6 +63,16 @@ private:
         std::optional<std::string> last_login; // Може бути NULL
         std::string status;
     };
+
+private:
+    sqlite3* db_;
+    char* zErrMsg = 0;
+    int rc;
+    mutable std::mutex db_mutex_;
+
+    //  User Table Methods
+    std::optional<int> getLastAssignedIpSuffix(const std::string& network_prefix);
+    std::vector<int> getAllAssignedIpSuffixes(const std::string& network_prefix);
 
     UserRecord fillUserRecordFromStatement(sqlite3_stmt* stmt);
     AuthTokenRecord fillAuthTokenRecordFromStatement(sqlite3_stmt* stmt);
