@@ -2,10 +2,12 @@
 project(lumina_common_libs)
 
 find_package( Boost REQUIRED COMPONENTS json )
+find_package( Sodium REQUIRED )
 
 add_library( lumina_common_libs 
     ConfigManager.cpp
     ValidationUtils.cpp
+    CryptoUtils.cpp
 )
 
 target_include_directories( lumina_common_libs
@@ -14,4 +16,5 @@ target_include_directories( lumina_common_libs
 
 target_link_libraries( lumina_common_libs
     Boost::json
+    sodium
 )

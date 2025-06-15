@@ -13,8 +13,8 @@
 
 static constexpr std::size_t HEADER_SIZE = 4;
 
+#include "ValidationUtils.hpp"
 #include "DatabaseManager.hpp"
-//#include "LuminaTlsServer.hpp"
 class LuminaTlsServer;
 
 namespace beast = boost::beast;

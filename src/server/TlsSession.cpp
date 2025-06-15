@@ -3,6 +3,8 @@
 #include "TlsSession.hpp"
 #include "LuminaTlsServer.hpp"
 
+using namespace ValidationUtils;
+
 TlsSession::TlsSession(
     tcp::socket tcp_socket,
     ssl::context& ssl_ctx,
@@ -196,17 +198,29 @@ json::value TlsSession::handle_request(const json::value& request) {
 
 // Приклад обробника реєстрації (дуже спрощено)
 json::value TlsSession::processRegisterRequest(const json::object& params) {
-    // Тут ваша логіка реєстрації, яка використовує m_dbManager
-    // Наприклад:
-    // if (!params.contains("email") || !params.at("email").is_string() ||
-    //     !params.contains("password") || !params.at("password").is_string()) {
-    //     return {{"status", "error"}, {"message", "Missing email or password"}};
-    // }
-    // std::string email = json::value_to<std::string>(params.at("email"));
-    // std::string password = json::value_to<std::string>(params.at("password"));
-    // ... (валідація, хешування пароля, додавання в БД) ...
+    //  validate params
+    if (
+        !params.contains("username") || !params.at("username").is_string() ||
+        !params.contains("password") || !params.at("password").is_string()
+    ) {
+        return {{"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
+    }
 
-    // Для прикладу просто повертаємо успіх
+    std::string username = json::value_to<std::string>(params.at("username"));
+    std::string password = json::value_to<std::string>(params.at("password"));
+
+    ValidationResult result = validateEmail(password);
+    if (result.has_value()) {
+        return {{"status", "error"}, {"message", result->message}};
+    }
+
+    result = validatePassword(password);
+    if (result.has_value()) {
+        return {{"status", "error"}, {"message", result->message}};
+    }
+
+    //  hash password
+
     return {{"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
 }
 

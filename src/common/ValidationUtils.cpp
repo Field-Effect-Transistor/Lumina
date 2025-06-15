@@ -4,7 +4,7 @@
 
 namespace ValidationUtils {
 
-    ValidationResult isValidEmailFormat(const std::string& email) {
+    ValidationResult validateEmail(const std::string& email) {
         if (isEmpty(email)) {
             return ValidationError{"email", "Email cannot be empty."};
         }
@@ -83,7 +83,7 @@ namespace ValidationUtils {
         return std::nullopt; 
     }
 
-    ValidationResult isValidPasswordFormat(const std::string& password) {
+    ValidationResult validatePassword(const std::string& password) {
         if (isEmpty(password)) {
             return ValidationError{"password", "Password cannot be empty."};
         }

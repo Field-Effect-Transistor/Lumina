@@ -18,8 +18,8 @@ namespace ValidationUtils {
 
     using ValidationResult = std::optional<ValidationError>;
 
-    ValidationResult isValidEmailFormat(const std::string& email);
-    ValidationResult isValidPasswordFormat(const std::string& password);
+    ValidationResult validateEmail(const std::string& email);
+    ValidationResult validatePassword(const std::string& password);
     inline bool isEmpty(const std::string& value) { return value.empty(); }
 
 };
