@@ -5,6 +5,7 @@ find_package( Boost REQUIRED COMPONENTS json )
 
 add_library( lumina_common_libs 
     ConfigManager.cpp
+    ValidationUtils.cpp
 )
 
 target_include_directories( lumina_common_libs
