@@ -8,6 +8,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <boost/json.hpp>
+#include <optional>
 
 namespace CryptoUtils {
     using byte = unsigned char;
@@ -40,7 +42,7 @@ namespace CryptoUtils {
     }
     inline std::vector<byte> hex2bin(const std::string& hex) {
         byte* bin = new byte[hex.size() / 2];
-        char* ptr;
+        const char* ptr;
         size_t actual_length;
         if ( !sodium_hex2bin(
             bin,
@@ -57,4 +59,14 @@ namespace CryptoUtils {
         delete[] bin;
         return bin_vector;
     }
+
+    std::string generateAccessTokenBase64(
+        const boost::json::object& payload,
+        const std::string& key
+    );
+
+    std::optional<boost::json::object> validateAccessTokenBase64(
+        const std::string& token,
+        const std::string& key
+    );
 }
