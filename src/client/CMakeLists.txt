@@ -15,6 +15,7 @@ add_executable( lumina_client
 )
 
 target_link_libraries( lumina_client
+    lumina_common_libs
     Qt::Core
     Qt::Gui
     Qt::Widgets
