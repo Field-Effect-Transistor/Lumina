@@ -9,6 +9,7 @@ add_executable( lumina_client
     main_client.cpp
     AuthWindow.cpp
     RestoreDialog.cpp
+    LuminaTlsClient.cpp
 #   resources
     resources/resources.qrc
 )
