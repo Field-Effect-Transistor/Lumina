@@ -1,8 +1,12 @@
 {
+    "lumina_dir":"/etc/lumina",
     "database":{
         "path":"/etc/lumina/server/lumina.db"
     },
     "tls":{
-        "port": 443
+        "host":"127.0.0.1",
+        "port":2811,
+        "cert":"/etc/lumina/openvpn/server/Lumina.crt",
+        "key":"/etc/lumina/openvpn/server/Lumina.key"
     }
 }
