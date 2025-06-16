@@ -4,6 +4,8 @@
         "path":"/etc/lumina/server/lumina.db"
     },
     "tls":{
-        "port": 443
+        "port":2811,
+        "cert":"/etc/lumina/openvpn/server/Lumina.crt",
+        "key":"/etc/lumina/openvpn/server/Lumina.key"
     }
 }

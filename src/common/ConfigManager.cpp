@@ -98,6 +98,6 @@ std::optional<T> ConfigManager::getValue(const std::string& key) const {
 }
 
 template std::optional<std::string> ConfigManager::getValue<std::string>(const std::string& key) const;
-template std::optional<int> ConfigManager::getValue<int>(const std::string& key) const;
+template std::optional<int64_t> ConfigManager::getValue<int64_t>(const std::string& key) const;
 template std::optional<bool> ConfigManager::getValue<bool>(const std::string& key) const;
 template std::optional<double> ConfigManager::getValue<double>(const std::string& key) const;

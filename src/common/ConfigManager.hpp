@@ -12,6 +12,7 @@
 #include <any>
 #include <mutex>
 #include <optional>
+#include <stdint.h>
 
 class ConfigManager {
 public:
