@@ -7,7 +7,7 @@
         "host":"Lumina",
         "port":2811,
         "ca":"/home/Vincente/Documents/ca.crt",
-        "cert":"/home/Vincente/Documents/Lumina.crt",
+        "cert":"/etc/lumina/openvpn/server/Lumina.crt",
         "key":"/etc/lumina/openvpn/server/Lumina.key"
     }
 }
