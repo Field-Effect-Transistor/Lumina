@@ -203,25 +203,25 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
         !params.contains("username") || !params.at("username").is_string() ||
         !params.contains("password") || !params.at("password").is_string()
     ) {
-        return {{"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
+        return {{"response_to", "register"}, {"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
     }
 
     std::string username = json::value_to<std::string>(params.at("username"));
     std::string password = json::value_to<std::string>(params.at("password"));
 
-    ValidationResult result = validateEmail(password);
+    ValidationResult result = validateEmail(username);
     if (result.has_value()) {
-        return {{"status", "error"}, {"message", result->message}};
+        return {{"response_to", "register"}, {"status", "error"}, {"message", result->message}};
     }
 
     result = validatePassword(password);
     if (result.has_value()) {
-        return {{"status", "error"}, {"message", result->message}};
+        return {{"response_to", "register"}, {"status", "error"}, {"message", result->message}};
     }
 
     //  hash password
 
-    return {{"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
+    return {{"response_to", "register"}, {"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
 }
 
 // Приклад обробника логіну (дуже спрощено)
