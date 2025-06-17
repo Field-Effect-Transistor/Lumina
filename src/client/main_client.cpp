@@ -8,7 +8,11 @@
 #include "LuminaTlsClient.hpp"
 #include "ConfigManager.hpp"
 
+//static LuminaTlsClient *client = nullptr;
+
 int main(int argc, char *argv[]) {
+    QApplication a(argc, argv);
+
     std::string config_file_path = "";
     if (argc > 1) {
         config_file_path = argv[1];
@@ -26,12 +30,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     std::cout << "Використовується файл конфігурації: " << config_file_path << std::endl;
+    ConfigManager::getInstance().loadConfig(config_file_path);
 
-    
+    std::string ca_path = *ConfigManager::getInstance().getValue<std::string>("tls::ca");
+    auto client = LuminaTlsClient(nullptr, ca_path.c_str());
+    std::string host = *ConfigManager::getInstance().getValue<std::string>("tls::host");
+    client.connectToServer(
+        host.c_str(),
+        *ConfigManager::getInstance().getValue<int64_t>("tls::port")
+    );
 
-
-    QApplication a(argc, argv);
-    AuthWindow w;
+    AuthWindow w(nullptr, &client);
     w.show();
-    return a.exec();
+    auto result = a.exec();
+    return result;
 }

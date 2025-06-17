@@ -22,6 +22,7 @@ LuminaTlsClient::LuminaTlsClient(QObject *parent, const QString& caFile)
     connect(m_socket, &QSslSocket::readyRead, this, &LuminaTlsClient::onReadyRead);
     connect(m_socket, qOverload<const QList<QSslError>&>(&QSslSocket::sslErrors),
         this, &LuminaTlsClient::onSslErrors);
+    qDebug() << "LuminaTlsClient created.";
 }
 
 void LuminaTlsClient::connectToServer(const QString& host, quint16 port) {
@@ -67,24 +68,18 @@ void LuminaTlsClient::connectToServer(const QString& host, quint16 port) {
     } else {
         qWarning() << "Could not open CA certificate file:" << m_caFile.fileName();
     }
-
-    // Варіант 2: Ігнорувати помилки SSL (ТІЛЬКИ ДЛЯ ТЕСТУВАННЯ!)
-    m_socket->ignoreSslErrors();
-    qWarning() << "SSL ERRORS ARE BEING IGNORED! DO NOT USE IN PRODUCTION!";
     
     qDebug() << "Connecting to" << host << ":" << port;
     m_socket->connectToHostEncrypted(host, port);
 }
 
-void LuminaTlsClient::disconnectFromServer()
-{
+void LuminaTlsClient::disconnectFromServer() {
     if (m_socket->state() != QAbstractSocket::UnconnectedState) {
         m_socket->disconnectFromHost();
     }
 }
 
-void LuminaTlsClient::sendMessage(const QJsonObject& message)
-{
+void LuminaTlsClient::sendMessage(const QJsonObject& message) {
     // Серіалізуємо JSON-об'єкт в QByteArray
     QJsonDocument doc(message);
     QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
@@ -107,20 +102,17 @@ void LuminaTlsClient::sendMessage(const QJsonObject& message)
     }
 }
 
-void LuminaTlsClient::onConnected()
-{
+void LuminaTlsClient::onConnected() {
     qDebug() << "TCP connection established. Waiting for encryption...";
     // Нічого не робимо, чекаємо на сигнал encrypted()
 }
 
-void LuminaTlsClient::onEncrypted()
-{
+void LuminaTlsClient::onEncrypted() {
     qDebug() << "TLS handshake successful. Connection is encrypted.";
     emit connected();
 }
 
-void LuminaTlsClient::onDisconnected()
-{
+void LuminaTlsClient::onDisconnected() {
     qDebug() << "Disconnected from server.";
     m_writeQueue.clear();
     m_isWriting = false;
@@ -129,15 +121,13 @@ void LuminaTlsClient::onDisconnected()
     emit disconnected();
 }
 
-void LuminaTlsClient::onReadyRead()
-{
+void LuminaTlsClient::onReadyRead() {
     // Додаємо всі доступні дані до нашого буфера
     m_readBuffer.append(m_socket->readAll());
     processReceivedData();
 }
 
-void LuminaTlsClient::processReceivedData()
-{
+void LuminaTlsClient::processReceivedData() {
     while (true) {
         // Якщо ми ще не знаємо розмір тіла
         if (m_expectedBodySize == -1) {
@@ -181,8 +171,7 @@ void LuminaTlsClient::processReceivedData()
 }
 
 
-void LuminaTlsClient::onSslErrors(const QList<QSslError>& errors)
-{
+void LuminaTlsClient::onSslErrors(const QList<QSslError>& errors) {
     QString errorStrings;
     for (const QSslError& error : errors) {
         qWarning() << "SSL Error:" << error.errorString();
@@ -193,8 +182,7 @@ void LuminaTlsClient::onSslErrors(const QList<QSslError>& errors)
     emit errorOccurred("SSL handshake failed: " + errorStrings);
 }
 
-void LuminaTlsClient::doWrite(const QByteArray& data)
-{
+void LuminaTlsClient::doWrite(const QByteArray& data) {
     if (m_socket->state() != QAbstractSocket::ConnectedState) {
         qWarning() << "Cannot write, socket not connected.";
         m_writeQueue.clear();

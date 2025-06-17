@@ -4,9 +4,10 @@
         "path":"/etc/lumina/server/lumina.db"
     },
     "tls":{
-        "host":"127.0.0.1",
+        "host":"Lumina",
         "port":2811,
-        "cert":"/etc/lumina/openvpn/server/Lumina.crt",
+        "ca":"/home/Vincente/Documents/ca.crt",
+        "cert":"/home/Vincente/Documents/Lumina.crt",
         "key":"/etc/lumina/openvpn/server/Lumina.key"
     }
 }

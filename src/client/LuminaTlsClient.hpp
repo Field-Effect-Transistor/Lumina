@@ -11,7 +11,7 @@
 class LuminaTlsClient : public QObject {
     Q_OBJECT
 public:
-    explicit LuminaTlsClient(QObject *parent = nullptr, const QString& caFile = "");
+    explicit LuminaTlsClient(QObject *parent, const QString& caFile);
 
     void connectToServer(const QString& host, quint16 port);
     void disconnectFromServer();

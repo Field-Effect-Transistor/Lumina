@@ -1,8 +1,12 @@
 //  AuthWindow.cpp
 
 #include "AuthWindow.hpp"
+#include "LuminaTlsClient.hpp"
+#include "ValidationUtils.hpp"
 
-AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
+#include <QJsonObject>
+
+AuthWindow::AuthWindow(QWidget *parent, LuminaTlsClient* client) : QWidget(parent), m_tlsClient(client) {
     setWindowTitle("Lumina - Sing in");
     QPixmap logoPixmap;
     if ( QApplication::palette().color(QPalette::Window).lightness() > 128 ) {
@@ -99,6 +103,10 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
 
     connect(changePageButton, &QPushButton::clicked, this, &AuthWindow::onChangePageButtonClicked);
     connect(restoreLink, &QPushButton::clicked, this, &AuthWindow::onRestoreLinkClicked);
+    connect(loginButton, &QPushButton::clicked, this, &AuthWindow::onLoginButtonClicked);
+    connect(regButton, &QPushButton::clicked, this, &AuthWindow::onRegButtonClicked);
+
+    //  Valia
 }
 
 void AuthWindow::onChangePageButtonClicked() {
@@ -122,5 +130,67 @@ void AuthWindow::onLoginButtonClicked() {
 }
 
 void AuthWindow::onRegButtonClicked() {
+    const std::string& email =regUsernameInput->text().toStdString();
+    const std::string& pass = regPasswordInput->text().toStdString();
+    const std::string& conpass = regPasswordConfirmInput->text().toStdString();
 
+    //  Validation  
+    //! may be removed to seprate slot on change line signal
+    auto res =  ValidationUtils::validateEmail(email);    
+    if (res.has_value()){
+        //  turn editline red
+        //  throw QDialog
+        return;
+    }
+
+    res = ValidationUtils::validatePassword(pass);
+    if (res.has_value()) {
+        //  turn line red
+        return;
+    }
+
+    if (pass != conpass) {
+        //  turn line red
+        //  trow QDialog
+        return;
+    }
+
+    //  sending Request
+    QJsonObject request;
+    request["command"] = "register";
+
+    QJsonObject params;
+    params["username"] = regUsernameInput->text();
+    params["password"] = regPasswordInput->text();
+    request["params"] = params;
+
+    m_tlsClient->sendMessage(request);
+}
+
+void AuthWindow::validatePass(const QLineEdit* passLine) {
+    if (ValidationUtils::validatePassword(
+        passLine->text().toStdString()
+    ).has_value()) {
+        //! make it red;
+    } else {
+        //! return own color
+    }
+}
+
+void AuthWindow::validatePassConfirm(const QLineEdit* passLine, const QLineEdit* passConfLine) {
+    if (passLine->text() != passConfLine->text()) {
+        //! make it red
+    } else {
+        //! return original color
+    }
+}
+
+void AuthWindow::validateEmail(const QLineEdit* emailLine) {
+    if (ValidationUtils::validateEmail(
+        emailLine->text().toStdString()
+    ).has_value()) {
+        //! turn it red
+    } else {
+        //! return own color
+    }
 }
