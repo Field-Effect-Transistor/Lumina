@@ -5,6 +5,8 @@
 #include "ValidationUtils.hpp"
 
 #include <QJsonObject>
+#include <QDebug>
+#include <QMessageBox>
 
 AuthWindow::AuthWindow(QWidget *parent, LuminaTlsClient* client) : QWidget(parent), m_tlsClient(client) {
     setWindowTitle("Lumina - Sing in");
@@ -106,7 +108,24 @@ AuthWindow::AuthWindow(QWidget *parent, LuminaTlsClient* client) : QWidget(paren
     connect(loginButton, &QPushButton::clicked, this, &AuthWindow::onLoginButtonClicked);
     connect(regButton, &QPushButton::clicked, this, &AuthWindow::onRegButtonClicked);
 
-    //  Valia
+    //  Valiadation
+    connect(loginUsernameInput, &QLineEdit::editingFinished, this, [&](){
+        AuthWindow::validateEmail(loginUsernameInput);
+    });
+    connect(regUsernameInput, &QLineEdit::editingFinished, this, [&](){
+        AuthWindow::validateEmail(regUsernameInput);
+    });
+    connect(regPasswordInput, &QLineEdit::editingFinished, this, [&](){
+        AuthWindow::validatePass(regPasswordInput);
+    });
+    connect(regPasswordConfirmInput, &QLineEdit::editingFinished, this, [&](){
+        AuthWindow::validatePassConfirm(regPasswordInput, regPasswordConfirmInput);
+    });
+
+    //  Show on connection to server
+    connect(m_tlsClient, &LuminaTlsClient::connected, this, [&](){
+        this->show();
+    });
 }
 
 void AuthWindow::onChangePageButtonClicked() {
@@ -134,24 +153,21 @@ void AuthWindow::onRegButtonClicked() {
     const std::string& pass = regPasswordInput->text().toStdString();
     const std::string& conpass = regPasswordConfirmInput->text().toStdString();
 
-    //  Validation  
-    //! may be removed to seprate slot on change line signal
+    //  Validation
     auto res =  ValidationUtils::validateEmail(email);    
     if (res.has_value()){
-        //  turn editline red
-        //  throw QDialog
+        QMessageBox::warning(this, "Error: Invalid email", res->message.c_str());
         return;
     }
 
     res = ValidationUtils::validatePassword(pass);
     if (res.has_value()) {
-        //  turn line red
+        QMessageBox::warning(this, "Error: Invalid password", res->message.c_str());
         return;
     }
 
     if (pass != conpass) {
-        //  turn line red
-        //  trow QDialog
+        QMessageBox::warning(this, "Error: Passwords don't match", "Passwords don't match");
         return;
     }
 
@@ -165,32 +181,38 @@ void AuthWindow::onRegButtonClicked() {
     request["params"] = params;
 
     m_tlsClient->sendMessage(request);
+    onChangePageButtonClicked();
 }
 
-void AuthWindow::validatePass(const QLineEdit* passLine) {
-    if (ValidationUtils::validatePassword(
+void AuthWindow::validatePass(QLineEdit* passLine) {
+    auto res = ValidationUtils::validatePassword(
         passLine->text().toStdString()
-    ).has_value()) {
-        //! make it red;
+    );
+    if (res.has_value()) {
+        passLine->setStyleSheet("QLineEdit { color: red; }");
+        qDebug() << res->field.c_str() << res->message.c_str();
     } else {
-        //! return own color
-    }
+        passLine->setStyleSheet("QLineEdit { color: green; }");
+    } 
 }
 
-void AuthWindow::validatePassConfirm(const QLineEdit* passLine, const QLineEdit* passConfLine) {
+void AuthWindow::validatePassConfirm(const QLineEdit* passLine, QLineEdit* passConfLine) {
     if (passLine->text() != passConfLine->text()) {
-        //! make it red
+        passConfLine->setStyleSheet("QLineEdit { color: red; }");
+        qDebug() << "Passwords don't match";
     } else {
-        //! return original color
+        passConfLine->setStyleSheet("QLineEdit { color: green; }");
     }
 }
 
-void AuthWindow::validateEmail(const QLineEdit* emailLine) {
-    if (ValidationUtils::validateEmail(
+void AuthWindow::validateEmail(QLineEdit* emailLine) {
+    auto res = ValidationUtils::validateEmail(
         emailLine->text().toStdString()
-    ).has_value()) {
-        //! turn it red
+    ); 
+    if (res.has_value()) {
+        emailLine->setStyleSheet("QLineEdit { color: red; }");
+        qDebug() << res->field.c_str() << res->message.c_str();
     } else {
-        //! return own color
+        emailLine->setStyleSheet("QLineEdit { color: green; }");
     }
 }

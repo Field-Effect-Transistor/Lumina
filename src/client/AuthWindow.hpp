@@ -57,8 +57,8 @@ private slots:
     void onLoginButtonClicked();
     void onRegButtonClicked();
 
-    void validatePass(const QLineEdit* passLine);
-    void validatePassConfirm(const QLineEdit* passLine, const QLineEdit* passConfLine);
-    void validateEmail(const QLineEdit* emailLine);
+    void validatePass(QLineEdit* passLine);
+    void validatePassConfirm(const QLineEdit* passLine, QLineEdit* passConfLine);
+    void validateEmail(QLineEdit* emailLine);
 
 };

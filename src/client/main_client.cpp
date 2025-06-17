@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     );
 
     AuthWindow w(nullptr, &client);
-    w.show();
+    //w.show();
     auto result = a.exec();
     return result;
 }
