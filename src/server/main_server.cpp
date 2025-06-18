@@ -10,10 +10,14 @@
 #include "ConfigManager.hpp" // Припускаємо, що він існує і працює
 #include "DatabaseManager.hpp"
 #include "LuminaTlsServer.hpp"
+#include "CryptoUtils.hpp"
+
 #include <boost/asio/signal_set.hpp>
 
 
 int main(int argc, char *argv[]) {
+    CryptoUtils::init();
+
     std::string config_file_path = "";
     if (argc > 1) {
         config_file_path = argv[1];

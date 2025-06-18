@@ -259,7 +259,7 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
         return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
     }
 
-    //return {{"response_to", "register"}, {"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
+    return {{"response_to", "register"}, {"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
 }
 
 // Приклад обробника логіну (дуже спрощено)
