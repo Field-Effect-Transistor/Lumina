@@ -495,7 +495,6 @@ int extractIpSuffix(const std::string& full_ip, const std::string& network_prefi
 
 // Отримує суфікс останньої IP-адреси, призначеної останньому створеному користувачеві
 std::optional<int> DatabaseManager::getLastAssignedIpSuffix(const std::string& network_prefix) {
-    std::lock_guard<std::mutex> lock(db_mutex_);
     // Знаходимо користувача, створеного останнім, у якого є vpn_ip
     const char* sql = "SELECT vpn_ip FROM Users WHERE vpn_ip IS NOT NULL ORDER BY created_at DESC, id DESC LIMIT 1;";
     sqlite3_stmt* stmt = nullptr;
@@ -527,7 +526,6 @@ std::optional<int> DatabaseManager::getLastAssignedIpSuffix(const std::string& n
 
 // Отримує всі призначені IP-суфікси
 std::vector<int> DatabaseManager::getAllAssignedIpSuffixes(const std::string& network_prefix) {
-    std::lock_guard<std::mutex> lock(db_mutex_);
     const char* sql = "SELECT vpn_ip FROM Users WHERE vpn_ip IS NOT NULL;";
     sqlite3_stmt* stmt = nullptr;
     std::vector<int> assigned_suffixes;
