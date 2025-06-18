@@ -70,7 +70,6 @@ private:
     int rc;
     mutable std::mutex db_mutex_;
 
-    //  User Table Methods
     std::optional<int> getLastAssignedIpSuffix(const std::string& network_prefix);
     std::vector<int> getAllAssignedIpSuffixes(const std::string& network_prefix);
 

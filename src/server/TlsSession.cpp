@@ -2,8 +2,11 @@
 
 #include "TlsSession.hpp"
 #include "LuminaTlsServer.hpp"
+#include "CryptoUtils.hpp"
+#include "ConfigManager.hpp"
 
 using namespace ValidationUtils;
+using byte = CryptoUtils::byte;
 
 TlsSession::TlsSession(
     tcp::socket tcp_socket,
@@ -219,9 +222,44 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
         return {{"response_to", "register"}, {"status", "error"}, {"message", result->message}};
     }
 
-    //  hash password
+    //  check is user exist
+    auto user = m_dbManager->getUserByEmail(username);
+    if (user.has_value()) {
+        return {{"response_to", "register"}, {"status", "error"}, {"message", "User already exists"}};
+    }
 
-    return {{"response_to", "register"}, {"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
+    //  hash password
+    std::vector<byte> salt = CryptoUtils::saltBin();
+    std::vector<byte> hash = CryptoUtils::hashPassword(password, salt);
+    std::string salt_hex = CryptoUtils::bin2hex(salt);
+    std::string hash_hex = CryptoUtils::bin2hex(hash);
+
+    //  create user
+    auto user_id = m_dbManager->addUser(username, hash_hex, salt_hex, "ACTIVE");
+    if (!user_id.has_value()) {
+        return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to create user"}};
+    }
+
+    //  send activation email
+    //! TODO
+    if (!m_dbManager->setUserVerified(user_id.value(), true)) {
+        return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+    }
+
+    //  set vpn ip
+    auto ip_prefix_ = ConfigManager::getInstance().getValue<std::string>("openvpn::network_prefix");
+    if (!ip_prefix_.has_value()) {
+        return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+    }
+    auto ip = m_dbManager->findFreeVpnIp(*ip_prefix_);
+    if (!ip.has_value()) {
+        return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+    }
+    if (!m_dbManager->assignVpnIpToUser(user_id.value(), *ip)) {
+        return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+    }
+
+    //return {{"response_to", "register"}, {"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
 }
 
 // Приклад обробника логіну (дуже спрощено)

@@ -9,5 +9,8 @@
         "ca":"/home/Vincente/Documents/ca.crt",
         "cert":"/etc/lumina/openvpn/server/Lumina.crt",
         "key":"/etc/lumina/openvpn/server/Lumina.key"
+    },
+    "openvpn":{
+        "network_prefix":"10.8.0."
     }
 }
