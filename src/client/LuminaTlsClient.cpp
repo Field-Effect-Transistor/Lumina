@@ -31,6 +31,9 @@ void LuminaTlsClient::connectToServer(const QString& host, quint16 port) {
         return;
     }
 
+    m_host = host;
+    m_port = port;
+
     // --- Налаштування SSL ---
     // Якщо ваш сервер використовує самопідписаний сертифікат або власний CA,
     // клієнт повинен йому довіряти.
@@ -218,4 +221,22 @@ void LuminaTlsClient::doWrite(const QByteArray& data) {
     if (!m_writeQueue.isEmpty()) { // Якщо є ще що надсилати
         doWrite(m_writeQueue.head());
     }
+}
+
+void LuminaTlsClient::reconnectToServer() {
+    if (m_host.isEmpty() || m_port == 0) {
+        qWarning() << "Cannot reconnect: host or port not set. Call connectToServer() first.";
+        emit errorOccurred("Reconnect failed: Host/port not previously set.");
+        return;
+    }
+
+    qDebug() << "Attempting to reconnect to" << m_host << ":" << m_port;
+
+    if (m_socket->state() != QAbstractSocket::UnconnectedState) {
+        qDebug() << "Socket is not in UnconnectedState. Aborting current connection before reconnecting.";
+        // Важливо: abort() також викличе onDisconnected(), який очистить черги та стан.
+        m_socket->abort();
+    }
+    
+    connectToServer(m_host, m_port);
 }

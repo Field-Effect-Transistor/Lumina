@@ -3,12 +3,21 @@
 #include "AuthWindow.hpp"
 #include "LuminaTlsClient.hpp"
 #include "ValidationUtils.hpp"
+#include "MessageDispatcher.hpp"
 
 #include <QJsonObject>
 #include <QDebug>
 #include <QMessageBox>
 
-AuthWindow::AuthWindow(QWidget *parent, LuminaTlsClient* client) : QWidget(parent), m_tlsClient(client) {
+AuthWindow::AuthWindow(
+    LuminaTlsClient* client,
+    MessageDispatcher* dispatcher,
+    QWidget *parent
+)
+    : QWidget(parent),
+    m_tlsClient(client),
+    m_dispatcher(dispatcher)
+{
     setWindowTitle("Lumina - Sing in");
     QPixmap logoPixmap;
     if ( QApplication::palette().color(QPalette::Window).lightness() > 128 ) {
@@ -126,6 +135,10 @@ AuthWindow::AuthWindow(QWidget *parent, LuminaTlsClient* client) : QWidget(paren
     connect(m_tlsClient, &LuminaTlsClient::connected, this, [&](){
         this->show();
     });
+
+    //  Hide on disconnection
+    connect(m_tlsClient, &LuminaTlsClient::disconnected, this, &AuthWindow::onDisconnected);
+
 }
 
 void AuthWindow::onChangePageButtonClicked() {
@@ -214,5 +227,26 @@ void AuthWindow::validateEmail(QLineEdit* emailLine) {
         qDebug() << res->field.c_str() << res->message.c_str();
     } else {
         emailLine->setStyleSheet("QLineEdit { color: green; }");
+    }
+}
+
+void AuthWindow::onDisconnected() {
+    this->hide();
+
+    QMessageBox msgBox(this);
+    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.setWindowTitle(tr("З'єднання втрачено"));
+    msgBox.setText(tr("Було втрачено з'єднання з сервером."));
+    msgBox.setInformativeText(tr("Спробувати перепідключитися?"));
+    
+    msgBox.setStandardButtons(QMessageBox::Retry | QMessageBox::Close);
+    msgBox.setDefaultButton(QMessageBox::Retry);
+
+    int choice = msgBox.exec();
+
+    if (choice == QMessageBox::Retry) {
+        m_tlsClient->reconnectToServer();
+    } else {
+        this->close();
     }
 }

@@ -14,6 +14,7 @@ public:
     explicit LuminaTlsClient(QObject *parent, const QString& caFile);
 
     void connectToServer(const QString& host, quint16 port);
+    void reconnectToServer();
     void disconnectFromServer();
 
     // Метод для надсилання JSON-об'єкта на сервер
@@ -40,6 +41,9 @@ private:
     QByteArray m_readBuffer; // Буфер для вхідних даних
     qint32 m_expectedBodySize; // Очікуваний розмір тіла повідомлення
     QFile m_caFile;
+
+    QString m_host;
+    quint16 m_port;
 
     QQueue<QByteArray> m_writeQueue; // Черга повідомлень на відправку
     bool m_isWriting;
