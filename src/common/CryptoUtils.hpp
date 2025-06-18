@@ -29,35 +29,38 @@ namespace CryptoUtils {
     );
     std::string generateTokenBase64(int length = 32);
     std::vector<byte> hashTokenBin(const std::string& rawToken);
-
-    inline std::string bin2hex(const std::vector<byte>& bin) {
-        std::string hex_str(bin.size() * 2, '\0');
-        sodium_bin2hex(
-            hex_str.data(),
-            bin.size() * 2 + 1,
-            bin.data(),
-            bin.size()
-        );
-        return hex_str;
-    }
+    
     inline std::vector<byte> hex2bin(const std::string& hex) {
-        byte* bin = new byte[hex.size() / 2];
-        const char* ptr;
+        // Використовуємо вектор для автоматичного керування пам'яттю
+        std::vector<byte> bin(hex.size() / 2);
         size_t actual_length;
-        if ( !sodium_hex2bin(
-            bin,
-            hex.size() / 2,
-            hex.data(),
+        // Перевірка на успіх: функція повертає 0
+        if (sodium_hex2bin(
+            bin.data(),
+            bin.size(),
+            hex.c_str(),
             hex.size(),
             nullptr,
             &actual_length,
-            &ptr
-        )) {
-            throw std::runtime_error("Failed to convert hex to bin");
+            nullptr
+        ) != 0) {
+            throw std::runtime_error("Failed to convert hex to bin. Input might be invalid.");
         }
-        std::vector<byte> bin_vector(bin, bin + actual_length);
-        delete[] bin;
-        return bin_vector;
+        bin.resize(actual_length); // На випадок, якщо результат коротший
+        return bin;
+    }
+
+    // `bin2hex` був у порядку, але я його перемістив сюди для послідовності
+    inline std::string bin2hex(const std::vector<byte>& bin) {
+        std::string hex_str(bin.size() * 2 + 1, '\0'); // +1 для нуль-термінатора
+        sodium_bin2hex(
+            &hex_str[0], // Безпечніший спосіб отримати неконстантний покажчик
+            hex_str.size(),
+            bin.data(),
+            bin.size()
+        );
+        hex_str.pop_back(); // Видаляємо нуль-термінатор, який додав sodium
+        return hex_str;
     }
 
     std::string generateAccessTokenBase64(
