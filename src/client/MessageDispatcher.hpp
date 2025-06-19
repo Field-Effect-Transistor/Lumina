@@ -13,6 +13,8 @@ public:
     MessageDispatcher(LuminaTlsClient *client, QObject *parent = nullptr);
 
 signals: 
+    void login(const QJsonObject& message);
+    void updateToken(const QJsonObject& message);
 
 private:
     LuminaTlsClient *m_tlsClient;

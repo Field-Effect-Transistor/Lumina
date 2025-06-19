@@ -13,6 +13,8 @@
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
+    QCoreApplication::setOrganizationName("FieldEffectTransistor");
+    QCoreApplication::setApplicationName("LuminaTlsClient");
 
     std::string config_file_path = "";
     if (argc > 1) {

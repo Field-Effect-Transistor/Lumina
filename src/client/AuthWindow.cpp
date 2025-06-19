@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QDebug>
 #include <QMessageBox>
+#include <QSettings>
 
 AuthWindow::AuthWindow(
     LuminaTlsClient* client,
@@ -139,6 +140,8 @@ AuthWindow::AuthWindow(
     //  Hide on disconnection
     connect(m_tlsClient, &LuminaTlsClient::disconnected, this, &AuthWindow::onDisconnected);
 
+    //  hide on login
+    connect(m_dispatcher, &MessageDispatcher::login, this, &AuthWindow::onLogin);
 }
 
 void AuthWindow::onChangePageButtonClicked() {
@@ -158,7 +161,30 @@ void AuthWindow::onRestoreLinkClicked() {
 }
 
 void AuthWindow::onLoginButtonClicked() {
+    const std::string& email =loginUsernameInput->text().toStdString();
+    const std::string& pass = loginPasswordInput->text().toStdString();
 
+    //  Validation
+    auto res =  ValidationUtils::validateEmail(email);    
+    if (res.has_value()){
+        QMessageBox::warning(this, "Error: Invalid email", res->message.c_str());
+        return;
+    }
+
+    res = ValidationUtils::validatePassword(pass);
+    if (res.has_value()) {
+        QMessageBox::warning(this, "Error: Invalid password", res->message.c_str());
+        return;
+    }
+
+    //  sending Request
+    QJsonObject request;
+    request["command"] = "login";
+    QJsonObject params;
+    params["username"] = loginUsernameInput->text();
+    params["password"] = loginPasswordInput->text();
+    request["params"] = params;
+    m_tlsClient->sendMessage(request);
 }
 
 void AuthWindow::onRegButtonClicked() {
@@ -183,6 +209,10 @@ void AuthWindow::onRegButtonClicked() {
         QMessageBox::warning(this, "Error: Passwords don't match", "Passwords don't match");
         return;
     }
+
+    regUsernameInput->text() = "";
+    regPasswordInput->text() = "";
+    regPasswordConfirmInput->text() = "";
 
     //  sending Request
     QJsonObject request;
@@ -249,4 +279,11 @@ void AuthWindow::onDisconnected() {
     } else {
         this->close();
     }
+}
+
+void AuthWindow::onLogin() {
+    loginUsernameInput->text() = "";
+    loginPasswordInput->text() = "";
+    onChangePageButtonClicked();
+    hide(); 
 }

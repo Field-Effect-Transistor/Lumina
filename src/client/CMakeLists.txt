@@ -11,6 +11,7 @@ add_executable( lumina_client
     RestoreDialog.cpp
     LuminaTlsClient.cpp
     MessageDispatcher.cpp
+    LuminaMainWindow.cpp
 #   resources
     resources/resources.qrc
 )
