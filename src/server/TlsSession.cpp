@@ -337,7 +337,7 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
 
         return {
             {"status", "success"},
-            {"command", "login"},
+            {"responseTo", "login"},
             {"refreshToken", refreshToken},
             {"accessToken", accessToken}
         };
