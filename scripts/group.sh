@@ -17,7 +17,7 @@ case "$1" in
     # створює основні групи, правило зберігати інші маршрути має викликатися лише раз
     init)
         checkRoot
-        checkDependecies
+        checkDependecies ipset iptables
 
         # Create admin group
         ipset create "$ADMIN_GROUP" hash:ip
