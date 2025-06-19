@@ -15,6 +15,7 @@ static constexpr std::size_t HEADER_SIZE = 4;
 
 #include "ValidationUtils.hpp"
 #include "DatabaseManager.hpp"
+#include "VpnServer.hpp"
 class LuminaTlsServer;
 
 namespace beast = boost::beast;
@@ -29,7 +30,6 @@ public:
     TlsSession(
         tcp::socket tcp_socket,
         ssl::context& ssl_ctx,
-        std::shared_ptr<DatabaseManager> database_manager,
         LuminaTlsServer* server_ptr
     );
     ~TlsSession();
@@ -47,6 +47,7 @@ private:
     bool m_is_writing = false;
 
     std::shared_ptr<DatabaseManager> m_dbManager;
+    std::shared_ptr<VpnServer> m_vpn;
     LuminaTlsServer* m_server_ptr;
 
     std::optional<UserRecord> m_currentUser;

@@ -7,12 +7,14 @@ LuminaTlsServer::LuminaTlsServer(
     net::io_context& ioc,
     ssl::context& ssl_ctx,
     unsigned short port,
-    std::shared_ptr<DatabaseManager> dbManager
+    std::shared_ptr<DatabaseManager> dbManager,
+    std::shared_ptr<VpnServer> vpn 
 ) : m_ioc(ioc),
     m_ssl_ctx(ssl_ctx),
     m_acceptor(ioc), // Ініціалізуємо acceptor з io_context
     m_port(port),
-    m_dbManager(dbManager)
+    m_dbManager(dbManager),
+    m_vpn(vpn)
 {
     std::cout << "[SERVER] LuminaTlsServer created for port " << m_port << std::endl;
 }
@@ -132,7 +134,6 @@ void LuminaTlsServer::on_accept(boost::system::error_code ec, tcp::socket socket
     auto new_session = std::make_shared<TlsSession>(
         std::move(socket), // Передаємо сокет у сесію
         m_ssl_ctx,
-        m_dbManager,
         this // Передаємо вказівник на себе для unregister_session
     );
 

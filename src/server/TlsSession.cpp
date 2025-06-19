@@ -1,4 +1,4 @@
-//  TlsServer.cpp
+//  TlsSession.cpp
 
 #include "TlsSession.hpp"
 #include "LuminaTlsServer.hpp"
@@ -11,10 +11,10 @@ using byte = CryptoUtils::byte;
 TlsSession::TlsSession(
     tcp::socket tcp_socket,
     ssl::context& ssl_ctx,
-    std::shared_ptr<DatabaseManager> database_manager,
     LuminaTlsServer* server_ptr
 ): m_ssl_stream(std::move(tcp_socket), ssl_ctx), // Важливо std::move для сокета
-    m_dbManager(database_manager),
+    m_dbManager(server_ptr->getDB()),
+    m_vpn(server_ptr->getVpn()),
     m_server_ptr(server_ptr),
     m_is_writing(false),
     m_currentUser(std::nullopt)
@@ -248,7 +248,7 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
         }
 
         //  set vpn ip
-        auto ip_prefix_ = ConfigManager::getInstance().getValue<std::string>("openvpn::network_prefix");
+        auto ip_prefix_ = ConfigManager::getInstance().getValue<std::string>("vpnserver::network_prefix");
         if (!ip_prefix_.has_value()) {
             return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }

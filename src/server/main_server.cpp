@@ -11,6 +11,7 @@
 #include "DatabaseManager.hpp"
 #include "LuminaTlsServer.hpp"
 #include "CryptoUtils.hpp"
+#include "VpnServer.hpp"
 
 #include <boost/asio/signal_set.hpp>
 
@@ -71,8 +72,14 @@ int main(int argc, char *argv[]) {
     std::cout << "Шлях до сертифіката: " << cert_path << std::endl;
     std::cout << "Шлях до ключа: " << key_path << std::endl;
 
-
     try {
+        auto vpn = std::make_shared<VpnServer>(
+            *ConfigManager::getInstance().getValue<std::string>("vpnserver::scripts_dir"),
+            *ConfigManager::getInstance().getValue<std::string>("lumina_dir"),
+            *ConfigManager::getInstance().getValue<std::string>("host"),
+            *ConfigManager::getInstance().getValue<std::string>("server_name")
+        );
+
         unsigned int num_threads = std::thread::hardware_concurrency();
         if (num_threads == 0) num_threads = 2;
         net::io_context ioc; // Створюємо io_context один раз
@@ -96,7 +103,7 @@ int main(int argc, char *argv[]) {
         if(ec_ssl) { std::cerr << "SSL_CTX: Помилка встановлення режиму верифікації: " << ec_ssl.message() << std::endl; return 1; }
 
 
-        auto server = std::make_shared<LuminaTlsServer>(ioc, ssl_ctx, port, dbManager); // Передаємо dbManager
+        auto server = std::make_shared<LuminaTlsServer>(ioc, ssl_ctx, port, dbManager, vpn);
         server->run();
 
         net::signal_set signals(ioc, SIGINT, SIGTERM);

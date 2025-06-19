@@ -10,7 +10,11 @@
         "cert":"/etc/lumina/openvpn/server/Lumina.crt",
         "key":"/etc/lumina/openvpn/server/Lumina.key"
     },
-    "openvpn":{
-        "network_prefix":"10.8.0."
+    "vpnserver":{
+        "host":"Lumina",
+        "server_name":"Lumina",
+        "network_prefix":"10.8.0.",
+        "scripts_dir":"/etc/lumina/scripts",
+        "ccd":"/etc/lumina/openvpn/ccd"
     }
 }
