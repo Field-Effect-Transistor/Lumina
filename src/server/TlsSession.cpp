@@ -194,6 +194,8 @@ json::value TlsSession::handle_request(const json::value& request) {
         return processLoginRequest(params);
     } else if (command == "logout") {
         //return processLogoutRequest(params);
+    } else if (command == "restoreSession") {
+        return procesRestoreSessionRequest(params);
     }
     return {{"status", "error"}, {"message", "Unknown command: " + command}};
 }
