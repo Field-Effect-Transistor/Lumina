@@ -71,7 +71,7 @@ void VpnServer::startVpnServer() {
         std::cerr << "[VPN SERVER]" <<("OpenVPN server is already running.");
         return;
     }
-    std::string command = "systemctl start /etc/systemd/system/openvpn-" + m_server_name + ".service";
+    std::string command = "systemctl start openvpn-" + m_server_name + ".service";
     auto result = execute(command);
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to start OpenVPN server: " + result.output);
@@ -84,7 +84,7 @@ void VpnServer::restartVpnServer() {
     if (!m_is_vpn_server_running) {
         std::cerr << "[VPN SERVER]" <<"OpenVPN server is not running.";
     }
-    std::string command = "systemctl restart /etc/systemd/system/openvpn-" + m_server_name + ".service";
+    std::string command = "systemctl restart openvpn-" + m_server_name + ".service";
     auto result = execute(command);
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to restart OpenVPN server: " + result.output);
@@ -98,7 +98,7 @@ void VpnServer::stopVpnServer() {
         std::cerr << "[VPN SERVER]" <<"OpenVPN server is not running, to be stopped" << std::endl;
         return;
     }
-    std::string command = "systemctl stop /etc/systemd/system/openvpn-" + m_server_name + ".service";
+    std::string command = "systemctl stop openvpn-" + m_server_name + ".service";
     auto result = execute(command);
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to stop OpenVPN server: " + result.output);
@@ -125,7 +125,7 @@ void VpnServer::addClient(
         throw std::runtime_error("Failed to add client: " + result.output);
     }
 
-    command = "systemctl restart /etc/systemd/system/openvpn-" + m_server_name + ".service";
+    command = "systemctl restart openvpn-" + m_server_name + ".service";
     result = execute(command);
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to restart OpenVPN server: " + result.output);
