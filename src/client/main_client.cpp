@@ -8,6 +8,7 @@
 #include "LuminaTlsClient.hpp"
 #include "ConfigManager.hpp"
 #include "MessageDispatcher.hpp"
+#include "LuminaMainWindow.hpp"
 
 //static LuminaTlsClient *client = nullptr;
 
@@ -38,15 +39,17 @@ int main(int argc, char *argv[]) {
     std::string ca_path = *ConfigManager::getInstance().getValue<std::string>("tls::ca");
     auto client = LuminaTlsClient(nullptr, ca_path.c_str());
     std::string host = *ConfigManager::getInstance().getValue<std::string>("tls::host");
+
+    MessageDispatcher dispatcher(&client);
+
+    AuthWindow w(&dispatcher);
+    LuminaMainWindow mainWindow(&dispatcher);
+    //w.show();
+
     client.connectToServer(
         host.c_str(),
         *ConfigManager::getInstance().getValue<int64_t>("tls::port")
     );
 
-    MessageDispatcher dispatcher(&client);
-
-    AuthWindow w(&client, &dispatcher);
-    //w.show();
-    auto result = a.exec();
-    return result;
+    return a.exec();
 }

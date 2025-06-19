@@ -3,32 +3,61 @@
 #include "MessageDispatcher.hpp"
 #include "LuminaTlsClient.hpp"
 
-#include <QMessageBox>
 #include <QSettings>
 
 MessageDispatcher::MessageDispatcher(LuminaTlsClient *client, QObject *parent)
     : QObject(parent),
     m_tlsClient(client) {
     connect(m_tlsClient, &LuminaTlsClient::messageReceived, this, &MessageDispatcher::onMessageReceived);
+    connect(m_tlsClient, &LuminaTlsClient::connected, this, &MessageDispatcher::onConnected);
 }
     
-void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
-    qDebug() << "Received message:" << message;
-    
-    QString status = message["status"].toString();
-    if (status == "success") {
-        QString command = message["command"].toString();
-        if (command == "login") {
-            QSettings settings;
-            if (message.contains("accessToken")) {
-                settings.setValue("accessToken", message["accessToken"].toString());
-            }
-            if (message.contains("refreshToken")) {
-                settings.setValue("refreshToken", message["refreshToken"].toString());
-            }
-            emit login(message);
-        }
+void MessageDispatcher::onConnected() {
+    QSettings settings;
+    auto refreshToken = settings.value("refreshToken");
+    auto username = settings.value("username");
+    if (refreshToken.isNull() && username.isNull()) {
+        emit startAuth();
     } else {
-        QMessageBox::critical(nullptr, "Error", message["message"].toString());
+        QJsonObject request;
+        request["command"] = "restoreSession";
+        QJsonObject params;
+        params["refreshToken"] = refreshToken.toString();
+        request["params"] = params;
+        m_tlsClient->sendMessage(request);
     }
+}
+
+void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
+    QString responseTo = message["responseTo"].toString();
+    QString status = message["status"].toString();
+    if (responseTo == "restoreSession") {
+        if ( status == "success") {
+            QSettings settings;
+            settings.setValue("accessToken", message["accessToken"].toString());
+        } else {
+            emit startAuth();
+        }
+    }
+
+    if (responseTo == "register") {
+        if (status == "error") {
+            emit authMessageReceived(message);
+        }
+    }
+
+    if (responseTo == "login") {
+        if (status == "success") {
+            QSettings settings;
+            settings.setValue("refreshToken", message["refreshToken"].toString());
+            settings.setValue("accessToken", message["accessToken"].toString());
+            settings.setValue("username", message["username"].toString());
+        } else {
+            emit authMessageReceived(message);
+        }
+    }
+}
+
+void MessageDispatcher::onMessageSended(const QJsonObject& message) {
+    m_tlsClient->sendMessage(message);
 }
