@@ -835,30 +835,34 @@ bool DatabaseManager::addRefreshToken(
 
 // Допоміжна функція для заповнення RefreshTokenRecord
 DatabaseManager::RefreshTokenRecord DatabaseManager::fillRefreshTokenRecordFromStatement(sqlite3_stmt* stmt) {
-    DatabaseManager::RefreshTokenRecord token;
+    RefreshTokenRecord token;
     token.id = sqlite3_column_int(stmt, 0);
     token.user_id = sqlite3_column_int(stmt, 1);
     token.token_hash = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
     const char* device_info_c_str = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
-    if (device_info_c_str) token.device_info = device_info_c_str;
+    if (device_info_c_str) {
+        token.device_info = device_info_c_str;
+    }
     token.created_at = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
     token.expires_at = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
     token.is_revoked = (sqlite3_column_int(stmt, 6) == 1);
     const char* last_used_at_c_str = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
-    if (last_used_at_c_str) token.last_used_at = last_used_at_c_str;
     return token;
 }
 
 std::optional<DatabaseManager::RefreshTokenRecord> DatabaseManager::getValidRefreshTokenByHash(const std::string& token_hash) {
-    std::lock_guard<std::mutex> lock(db_mutex_);
+    std::lock_guard<std::mutex> lock(db_mutex_); // Якщо ви додали м'ютекс
+
+    // --- ВИПРАВЛЕНО: Прибрано `last_used_at` зі списку колонок ---
     const char* sql =
-        "SELECT id, user_id, token_hash, device_info, created_at, expires_at, is_revoked, last_used_at "
+        "SELECT id, user_id, token_hash, device_info, created_at, expires_at, is_revoked "
         "FROM RefreshTokens "
         "WHERE token_hash = ? AND is_revoked = 0 AND expires_at > datetime('now');";
+    
     sqlite3_stmt* stmt = nullptr;
     std::optional<RefreshTokenRecord> tokenRecord = std::nullopt;
 
-    rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         std::cerr << "[ERROR] Failed to prepare statement (getValidRefreshTokenByHash): " << sqlite3_errmsg(db_) << std::endl;
         finalize_statement(stmt, "getValidRefreshTokenByHash_prepare", db_);
@@ -869,6 +873,7 @@ std::optional<DatabaseManager::RefreshTokenRecord> DatabaseManager::getValidRefr
 
     rc = sqlite3_step(stmt);
     if (rc == SQLITE_ROW) {
+        // Тепер fillRefreshTokenRecordFromStatement також виправлена і не буде читати 8-му колонку
         tokenRecord = fillRefreshTokenRecordFromStatement(stmt);
     } else if (rc != SQLITE_DONE) {
         std::cerr << "[ERROR] Failed to execute statement (getValidRefreshTokenByHash): " << sqlite3_errmsg(db_) << std::endl;
@@ -929,32 +934,6 @@ bool DatabaseManager::revokeAllRefreshTokensForUser(int user_id) {
     // Можна повернути true, якщо команда виконана, навіть якщо 0 токенів змінено (бо їх могло не бути).
     finalize_statement(stmt, "revokeAllRefreshTokensForUser", db_);
     return true;
-}
-
-bool DatabaseManager::updateRefreshTokenLastUsed(const std::string& token_hash) {
-    std::lock_guard<std::mutex> lock(db_mutex_);
-    const char* sql = "UPDATE RefreshTokens SET last_used_at = CURRENT_TIMESTAMP WHERE token_hash = ?;";
-    sqlite3_stmt* stmt = nullptr;
-
-    rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
-    if (rc != SQLITE_OK) {
-        std::cerr << "[ERROR] Failed to prepare statement (updateRefreshTokenLastUsed): " << sqlite3_errmsg(db_) << std::endl;
-        finalize_statement(stmt, "updateRefreshTokenLastUsed_prepare", db_);
-        return false;
-    }
-
-    sqlite3_bind_text(stmt, 1, token_hash.c_str(), -1, SQLITE_STATIC);
-
-    rc = sqlite3_step(stmt);
-    if (rc != SQLITE_DONE) {
-        std::cerr << "[ERROR] Failed to execute statement (updateRefreshTokenLastUsed): " << sqlite3_errmsg(db_) << std::endl;
-        finalize_statement(stmt, "updateRefreshTokenLastUsed_step", db_);
-        return false;
-    }
-
-    bool success = sqlite3_changes(db_) > 0;
-    finalize_statement(stmt, "updateRefreshTokenLastUsed", db_);
-    return success;
 }
 
 int DatabaseManager::deleteExpiredOrRevokedRefreshTokens() {

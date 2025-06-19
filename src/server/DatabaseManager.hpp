@@ -1,4 +1,4 @@
-//  DatabaseManager.cpp
+//  DatabaseManager.hpp
 
 #pragma once
 
@@ -36,7 +36,6 @@ public:
         std::string created_at;
         std::string expires_at;
         bool is_revoked; // У базі це INTEGER 0 або 1
-        std::optional<std::string> last_used_at; // Може бути NULL
     };
 
     struct GroupRecord {
@@ -133,7 +132,7 @@ public:
     std::optional<RefreshTokenRecord> getValidRefreshTokenByHash(const std::string& token_hash);
     bool revokeRefreshToken(const std::string& token_hash);
     bool revokeAllRefreshTokensForUser(int user_id);
-    bool updateRefreshTokenLastUsed(const std::string& token_hash);
+    //bool updateRefreshTokenLastUsed(const std::string& token_hash);
     int deleteExpiredOrRevokedRefreshTokens();
 
     //  Group Table Methods
