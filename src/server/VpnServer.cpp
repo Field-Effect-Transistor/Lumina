@@ -133,6 +133,7 @@ void VpnServer::addClient(
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to restart OpenVPN server: " + result.output);
     }
+    std::cout << "[VPN SERVER]" << "Client " << client_name << " added." << std::endl;
 }
 
 void VpnServer::createGroup(
@@ -149,6 +150,7 @@ void VpnServer::createGroup(
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to create group: " + result.output);
     }
+    std::cout << "[VPN SERVER]" << "Group " << group_name << " created. Father IP: " << father_ip << "." << std::endl;
 }
 
 void VpnServer::createGroup(const std::string& group_name) {
@@ -162,6 +164,7 @@ void VpnServer::createGroup(const std::string& group_name) {
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to create group: " + result.output);
     }
+    std::cout << "[VPN SERVER]" << "Group " << group_name << " created." << std::endl;
 }
 
 void VpnServer::destroyGroup(const std::string& group_name) {
@@ -175,6 +178,7 @@ void VpnServer::destroyGroup(const std::string& group_name) {
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to destroy group: " + result.output);
     }
+    std::cout << "[VPN SERVER]" << "Group " << group_name << " destroyed." << std::endl;
 }
 
 void VpnServer::addUserToGroup(
@@ -191,6 +195,7 @@ void VpnServer::addUserToGroup(
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to add user to group: " + result.output);
     }
+    std::cout << "[VPN SERVER]" << "User " << user_ip << " added to group " << group_name << "." << std::endl;
 }
 
 void VpnServer::removeUserFromGroup(
@@ -207,6 +212,7 @@ void VpnServer::removeUserFromGroup(
     if (result.exit_code != 0) {
         throw std::runtime_error("Failed to remove user from group: " + result.output);
     }
+    std::cout << "[VPN SERVER]" << "User " << user_ip << " removed from group " << group_name << "." << std::endl;
 }
 
 std::string VpnServer::getOvpn(const std::string& client_name) {
