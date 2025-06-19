@@ -12,12 +12,18 @@ Q_OBJECT
 public:
     MessageDispatcher(LuminaTlsClient *client, QObject *parent = nullptr);
 
-signals: 
-
 private:
     LuminaTlsClient *m_tlsClient;
 
-private slots:
-    void onMessageReceived(const QJsonObject& message);
+signals: 
+    void startAuth();
+    void startMainWindow();
+    void authMessageReceived(const QJsonObject& message);
+    void login();
 
+
+public slots:
+    void onMessageReceived(const QJsonObject& message);
+    void onConnected();
+    void onMessageSended(const QJsonObject& message);
 };

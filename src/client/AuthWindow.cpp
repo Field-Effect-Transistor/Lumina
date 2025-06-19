@@ -1,21 +1,19 @@
 //  AuthWindow.cpp
 
 #include "AuthWindow.hpp"
-#include "LuminaTlsClient.hpp"
 #include "ValidationUtils.hpp"
 #include "MessageDispatcher.hpp"
 
 #include <QJsonObject>
 #include <QDebug>
 #include <QMessageBox>
+#include <QSettings>
 
 AuthWindow::AuthWindow(
-    LuminaTlsClient* client,
     MessageDispatcher* dispatcher,
     QWidget *parent
 )
     : QWidget(parent),
-    m_tlsClient(client),
     m_dispatcher(dispatcher)
 {
     setWindowTitle("Lumina - Sing in");
@@ -129,16 +127,18 @@ AuthWindow::AuthWindow(
     });
     connect(regPasswordConfirmInput, &QLineEdit::editingFinished, this, [&](){
         AuthWindow::validatePassConfirm(regPasswordInput, regPasswordConfirmInput);
-    });
+    }); 
 
-    //  Show on connection to server
-    connect(m_tlsClient, &LuminaTlsClient::connected, this, [&](){
-        this->show();
-    });
+    //  start Auth
+    connect(m_dispatcher, &MessageDispatcher::startAuth, this, &AuthWindow::onStartAuth);
 
-    //  Hide on disconnection
-    connect(m_tlsClient, &LuminaTlsClient::disconnected, this, &AuthWindow::onDisconnected);
+    //  to send messages through dispatcher
+    connect(this, &AuthWindow::sendMessage, m_dispatcher, &MessageDispatcher::onMessageSended);
+    
+    //  to receive messages through dispatcher
+    connect(m_dispatcher, &MessageDispatcher::authMessageReceived, this, &AuthWindow::onMessageReceived);
 
+    connect(m_dispatcher, &MessageDispatcher::login, this, &AuthWindow::onLogin);
 }
 
 void AuthWindow::onChangePageButtonClicked() {
@@ -158,7 +158,32 @@ void AuthWindow::onRestoreLinkClicked() {
 }
 
 void AuthWindow::onLoginButtonClicked() {
+    const std::string& email =loginUsernameInput->text().toStdString();
+    const std::string& pass = loginPasswordInput->text().toStdString();
 
+    //  Validation
+    auto res =  ValidationUtils::validateEmail(email);    
+    if (res.has_value()){
+        QMessageBox::warning(this, "Error: Invalid email", res->message.c_str());
+        return;
+    }
+
+    res = ValidationUtils::validatePassword(pass);
+    if (res.has_value()) {
+        QMessageBox::warning(this, "Error: Invalid password", res->message.c_str());
+        return;
+    }
+
+    //  sending Request
+    QJsonObject request;
+    request["command"] = "login";
+    QJsonObject params;
+    params["username"] = loginUsernameInput->text();
+    params["password"] = loginPasswordInput->text();
+    request["params"] = params;
+    emit sendMessage(request);
+    QSettings settings;
+    settings.setValue("username", loginUsernameInput->text());
 }
 
 void AuthWindow::onRegButtonClicked() {
@@ -184,6 +209,10 @@ void AuthWindow::onRegButtonClicked() {
         return;
     }
 
+    regUsernameInput->text() = "";
+    regPasswordInput->text() = "";
+    regPasswordConfirmInput->text() = "";
+
     //  sending Request
     QJsonObject request;
     request["command"] = "register";
@@ -193,7 +222,7 @@ void AuthWindow::onRegButtonClicked() {
     params["password"] = regPasswordInput->text();
     request["params"] = params;
 
-    m_tlsClient->sendMessage(request);
+    emit sendMessage(request);
     onChangePageButtonClicked();
 }
 
@@ -230,6 +259,7 @@ void AuthWindow::validateEmail(QLineEdit* emailLine) {
     }
 }
 
+/*
 void AuthWindow::onDisconnected() {
     this->hide();
 
@@ -248,5 +278,48 @@ void AuthWindow::onDisconnected() {
         m_tlsClient->reconnectToServer();
     } else {
         this->close();
+    }
+}
+*/
+void AuthWindow::onLogin() {
+    hide(); 
+    loginUsernameInput->text() = "";
+    loginPasswordInput->text() = "";
+    onChangePageButtonClicked();
+}
+/*
+void AuthWindow::onConnected() {
+    QSettings settings;
+    auto username = settings.value("username");
+    auto accessToken = settings.value("accessToken");
+
+    if (!username.isNull() && !accessToken.isNull()) {
+        QJsonObject request;
+        request["command"] = "restoreSession";
+        QJsonObject params;
+        params["username"] = username.toString();
+        params["accessToken"] = accessToken.toString();
+        request["params"] = params;
+        m_tlsClient->sendMessage(request);
+    } else {
+        show();
+    }
+}
+
+//*/
+
+void AuthWindow::onStartAuth() {
+    show();
+}
+
+
+void AuthWindow::onMessageReceived(const QJsonObject& message) {
+    QString responseTo = message["responseTo"].toString();
+    QString status = message["status"].toString();
+
+    if (responseTo == "login" || true) {
+        if (status == "error") {
+            QMessageBox::warning(this, "Error", message["message"].toString());
+        }
     }
 }
