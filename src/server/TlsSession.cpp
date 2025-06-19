@@ -259,6 +259,9 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
         if (!m_dbManager->assignVpnIpToUser(user_id.value(), *ip)) {
             return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
+
+        // Creating new vpn client
+        m_vpn->addClient(username, *ip);
     }
     catch (const std::exception& e) {
         std::cerr << "[SESSION " << this << "] Failed to create user: " << e.what() << std::endl;

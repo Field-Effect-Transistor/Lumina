@@ -77,6 +77,7 @@ void VpnServer::startVpnServer() {
         throw std::runtime_error("Failed to start OpenVPN server: " + result.output);
     }
     m_is_vpn_server_running = true;
+    std::cout << "[VPN SERVER]" << "OpenVPN server started." << std::endl;
 }
 
 void VpnServer::restartVpnServer() {
@@ -90,6 +91,7 @@ void VpnServer::restartVpnServer() {
         throw std::runtime_error("Failed to restart OpenVPN server: " + result.output);
     }
     m_is_vpn_server_running = true;
+    std::cout << "[VPN SERVER]" << "OpenVPN server restarted." << std::endl;
 }
 
 void VpnServer::stopVpnServer() {
@@ -104,6 +106,7 @@ void VpnServer::stopVpnServer() {
         throw std::runtime_error("Failed to stop OpenVPN server: " + result.output);
     }
     m_is_vpn_server_running = false;
+    std::cout << "[VPN SERVER]" << "OpenVPN server stopped." << std::endl;
 }
 
 void VpnServer::addClient(
