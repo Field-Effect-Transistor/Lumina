@@ -1,6 +1,6 @@
 {
     "lumina_dir":"/etc/lumina",
-    "server_key":"012345678910",
+    "server_key":"01234567890123456789012345678910",
     "database":{
         "path":"/etc/lumina/server/lumina.db"
     },

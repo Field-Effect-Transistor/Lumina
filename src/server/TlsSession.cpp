@@ -318,6 +318,16 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
             m_server_ptr->m_key
         );
 
+        auto refreshTokenHash = CryptoUtils::bin2hex(
+            CryptoUtils::hashTokenBin(refreshToken)
+        );
+        m_dbManager->addRefreshToken(
+            m_currentUser.id,
+            refreshTokenHash,
+            "none",
+            60
+        );
+
         std::cout << "[SESSION " << this << "] Login successful. ONLY FOR TESTING!!!" << std::endl;
         std::cout << "[SESSION " << this << "] Refresh token: " << refreshToken << std::endl;
         std::cout << "[SESSION " << this << "] Access token: " << accessToken << std::endl;
