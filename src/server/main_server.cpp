@@ -73,11 +73,15 @@ int main(int argc, char *argv[]) {
     std::cout << "Шлях до ключа: " << key_path << std::endl;
 
     try {
+        auto scripts_dir = ConfigManager::getInstance().getValue<std::string>("vpnserver::scripts_dir");
+        auto lumina_dir = ConfigManager::getInstance().getValue<std::string>("lumina_dir");
+        auto host = ConfigManager::getInstance().getValue<std::string>("vpnserver::host");
+        auto server_name = ConfigManager::getInstance().getValue<std::string>("vpnserver::server_name");
         auto vpn = std::make_shared<VpnServer>(
-            *ConfigManager::getInstance().getValue<std::string>("vpnserver::scripts_dir"),
-            *ConfigManager::getInstance().getValue<std::string>("lumina_dir"),
-            *ConfigManager::getInstance().getValue<std::string>("host"),
-            *ConfigManager::getInstance().getValue<std::string>("server_name")
+            *scripts_dir,
+            *lumina_dir,
+            *host,
+            *server_name
         );
 
         unsigned int num_threads = std::thread::hardware_concurrency();
