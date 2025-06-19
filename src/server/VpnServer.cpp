@@ -121,7 +121,7 @@ void VpnServer::addClient(
         "CLIENT_NAME=" + sanitize(client_name) +
         " HOST=" + sanitize(m_host) +
         " CLIENT_IP=" + sanitize(client_ip) +
-        " " + (m_scripts_dir / "add_client.sh").string();
+        " " + (m_scripts_dir / "addClient.sh").string();
 
     auto result = execute(command);
     if (result.exit_code != 0) {
