@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
     auto dbManager = std::make_shared<DatabaseManager>(db_path_str);
 
     auto port_opt = ConfigManager::getInstance().getValue<int64_t>("tls::port");
+    auto server_key = ConfigManager::getInstance().getValue<std::string>("server_key");
     std::optional<std::string> cert_path_opt = ConfigManager::getInstance().getValue<std::string>("tls::cert");
     std::optional<std::string> key_path_opt = ConfigManager::getInstance().getValue<std::string>("tls::key");
 
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
         if(ec_ssl) { std::cerr << "SSL_CTX: Помилка встановлення режиму верифікації: " << ec_ssl.message() << std::endl; return 1; }
 
 
-        auto server = std::make_shared<LuminaTlsServer>(ioc, ssl_ctx, port, dbManager, vpn);
+        auto server = std::make_shared<LuminaTlsServer>(ioc, ssl_ctx, port, *server_key, dbManager, vpn);
         server->run();
 
         net::signal_set signals(ioc, SIGINT, SIGTERM);

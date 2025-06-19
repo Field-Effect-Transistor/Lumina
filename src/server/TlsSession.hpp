@@ -50,7 +50,7 @@ private:
     std::shared_ptr<VpnServer> m_vpn;
     LuminaTlsServer* m_server_ptr;
 
-    std::optional<UserRecord> m_currentUser;
+    UserRecord m_currentUser;
 
     void do_handshake();
     void on_handshake(boost::system::error_code ec);

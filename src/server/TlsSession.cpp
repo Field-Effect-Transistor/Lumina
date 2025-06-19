@@ -16,8 +16,7 @@ TlsSession::TlsSession(
     m_dbManager(server_ptr->getDB()),
     m_vpn(server_ptr->getVpn()),
     m_server_ptr(server_ptr),
-    m_is_writing(false),
-    m_currentUser(std::nullopt)
+    m_is_writing(false)
 {
     std::cout << "[SESSION " << this << "] New session created." << std::endl;
 }
@@ -201,34 +200,33 @@ json::value TlsSession::handle_request(const json::value& request) {
 
 // Приклад обробника реєстрації (дуже спрощено)
 json::value TlsSession::processRegisterRequest(const json::object& params) {
-    //  validate params
-    if (
-        !params.contains("username") || !params.at("username").is_string() ||
-        !params.contains("password") || !params.at("password").is_string()
-    ) {
-        return {{"response_to", "register"}, {"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
-    }
-
-    std::string username = json::value_to<std::string>(params.at("username"));
-    std::string password = json::value_to<std::string>(params.at("password"));
-
-    ValidationResult result = validateEmail(username);
-    if (result.has_value()) {
-        return {{"response_to", "register"}, {"status", "error"}, {"message", result->message}};
-    }
-
-    result = validatePassword(password);
-    if (result.has_value()) {
-        return {{"response_to", "register"}, {"status", "error"}, {"message", result->message}};
-    }
-
-    //  check is user exist
-    auto user = m_dbManager->getUserByEmail(username);
-    if (user.has_value()) {
-        return {{"response_to", "register"}, {"status", "error"}, {"message", "User already exists"}};
-    }
-
     try {
+        //  validate params
+        if (
+            !params.contains("username") || !params.at("username").is_string() ||
+            !params.contains("password") || !params.at("password").is_string()
+        ) {
+            return {{"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
+        }
+
+        std::string username = json::value_to<std::string>(params.at("username"));
+        std::string password = json::value_to<std::string>(params.at("password"));
+
+        ValidationResult result = validateEmail(username);
+        if (result.has_value()) {
+            return {{"status", "error"}, {"message", result->message}};
+        }
+
+        result = validatePassword(password);
+        if (result.has_value()) {
+            return {{"status", "error"}, {"message", result->message}};
+        }
+
+        //  check is user exist
+        auto user = m_dbManager->getUserByEmail(username);
+        if (user.has_value()) {
+            return {{"status", "error"}, {"message", "User already exists"}};
+        }
         //  hash password
         std::vector<byte> salt = CryptoUtils::saltBin();
         std::vector<byte> hash = CryptoUtils::hashPassword(password, salt);
@@ -238,26 +236,26 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
         //  create user
         auto user_id = m_dbManager->addUser(username, hash_hex, salt_hex, "ACTIVE");
         if (!user_id.has_value()) {
-            return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to create user"}};
+            return {{"status", "error"}, {"message", "Failed to create user"}};
         }
 
         //  send activation email
         //! TODO
         if (!m_dbManager->setUserVerified(user_id.value(), true)) {
-            return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"status", "error"}, {"message", "Failed to set user as verified"}};
         }
 
         //  set vpn ip
         auto ip_prefix_ = ConfigManager::getInstance().getValue<std::string>("vpnserver::network_prefix");
         if (!ip_prefix_.has_value()) {
-            return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"status", "error"}, {"message", "Failed to set user as verified"}};
         }
         auto ip = m_dbManager->findFreeVpnIp(*ip_prefix_);
         if (!ip.has_value()) {
-            return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"status", "error"}, {"message", "Failed to set user as verified"}};
         }
         if (!m_dbManager->assignVpnIpToUser(user_id.value(), *ip)) {
-            return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"status", "error"}, {"message", "Failed to set user as verified"}};
         }
 
         // Creating new vpn client
@@ -265,23 +263,77 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
     }
     catch (const std::exception& e) {
         std::cerr << "[SESSION " << this << "] Failed to create user: " << e.what() << std::endl;
-        return {{"response_to", "register"}, {"status", "error"}, {"message", "Failed to create user: " + std::string(e.what())}};
+        return {{"status", "error"}, {"message", "Failed to create user: " + std::string(e.what())}};
     }
 
-
-    return {{"response_to", "register"}, {"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
+    return {{"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
 }
 
 // Приклад обробника логіну (дуже спрощено)
 json::value TlsSession::processLoginRequest(const json::object& params) {
-    // Тут ваша логіка авторизації, яка використовує m_dbManager
-    // ...
-    // if (login_successful) {
-    //     m_currentUser = ...; // Встановити дані користувача
-    //     return {{"status", "success"}, {"accessToken", "..."}, {"refreshToken", "..."}};
-    // } else {
-    //     return {{"status", "error"}, {"message", "Invalid credentials"}};
-    // }
+    try {
+        //  validate params
+        if (
+            !params.contains("username") || !params.at("username").is_string() ||
+            !params.contains("password") || !params.at("password").is_string()
+        ) {
+            return {{"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};    
+        }
+
+        std::string username = json::value_to<std::string>(params.at("username"));
+        std::string password = json::value_to<std::string>(params.at("password"));
+
+        ValidationResult result = validateEmail(username);
+        if (result.has_value()) {
+            return {{"status", "error"}, {"message", result->message}};
+        }
+
+        result = validatePassword(password);
+        if (result.has_value()) {
+            return {{"status", "error"}, {"message", result->message}};
+        }
+
+        //  check cridentals
+        auto user = m_dbManager->getUserByEmail(username);
+        if (!user.has_value()) {
+            return {{"status", "error"}, {"message", "User not found"}};
+        }
+
+        if (!CryptoUtils::verifyPassword(
+            password,
+            user->salt,
+            user->password_hash
+        )) {
+            return {{"status", "error"}, {"message", "Invalid password"}};
+        }
+
+        m_currentUser = user.value();
+
+        auto refreshToken = CryptoUtils::generateTokenBase64();
+        auto accessToken = CryptoUtils::generateAccessTokenBase64(
+            {
+                {"user_id", m_currentUser.id},
+                {"email", m_currentUser.email}
+            },
+            m_server_ptr->m_key
+        );
+
+        std::cout << "[SESSION " << this << "] Login successful. ONLY FOR TESTING!!!" << std::endl;
+        std::cout << "[SESSION " << this << "] Refresh token: " << refreshToken << std::endl;
+        std::cout << "[SESSION " << this << "] Access token: " << accessToken << std::endl;
+
+        return {
+            {"status", "success"},
+            {"command", "login"},
+            {"refreshToken", refreshToken},
+            {"accessToken", accessToken}
+        };
+
+
+    } catch (const std::exception& e) {
+        std::cerr << "[SESSION " << this << "] Failed to login: " << e.what() << std::endl;
+        return {{"status", "error"}, {"message", "Failed to login: " + std::string(e.what())}};
+    }
     return {{"status", "success"}, {"message", "Login request received (implement actual logic)"}};
 }
 

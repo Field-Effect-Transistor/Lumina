@@ -7,6 +7,7 @@ LuminaTlsServer::LuminaTlsServer(
     net::io_context& ioc,
     ssl::context& ssl_ctx,
     unsigned short port,
+    const std::string& key,
     std::shared_ptr<DatabaseManager> dbManager,
     std::shared_ptr<VpnServer> vpn 
 ) : m_ioc(ioc),
@@ -14,7 +15,8 @@ LuminaTlsServer::LuminaTlsServer(
     m_acceptor(ioc), // Ініціалізуємо acceptor з io_context
     m_port(port),
     m_dbManager(dbManager),
-    m_vpn(vpn)
+    m_vpn(vpn),
+    m_key(key)
 {
     std::cout << "[SERVER] LuminaTlsServer created for port " << m_port << std::endl;
 }

@@ -25,6 +25,7 @@ public:
         net::io_context& ioc,
         ssl::context& ssl_ctx,
         unsigned short port,
+        const std::string& key,
         std::shared_ptr<DatabaseManager> dbManager,
         std::shared_ptr<VpnServer> vpn
     );
@@ -38,6 +39,8 @@ public:
 
     std::shared_ptr<DatabaseManager> getDB() { return m_dbManager; }
     std::shared_ptr<VpnServer> getVpn() { return m_vpn; }
+
+    std::string m_key;
 
 private:
     void do_accept();
