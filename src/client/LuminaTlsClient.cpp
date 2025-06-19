@@ -167,6 +167,7 @@ void LuminaTlsClient::processReceivedData() {
         }
 
         // Випромінюємо сигнал з розпарсеним повідомленням
+        qDebug() << "Received JSON object:" << doc.object();
         emit messageReceived(doc.object());
 
         // Продовжуємо цикл, оскільки в буфері можуть бути ще повні повідомлення

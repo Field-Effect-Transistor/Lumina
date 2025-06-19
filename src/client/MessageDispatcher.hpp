@@ -17,8 +17,10 @@ private:
 
 signals: 
     void startAuth();
+    void startMainWindow();
     void authMessageReceived(const QJsonObject& message);
     void login();
+
 
 public slots:
     void onMessageReceived(const QJsonObject& message);

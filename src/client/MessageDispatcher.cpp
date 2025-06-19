@@ -35,8 +35,12 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
         if ( status == "success") {
             QSettings settings;
             settings.setValue("accessToken", message["accessToken"].toString());
+            emit startMainWindow();
         } else {
             emit startAuth();
+            QSettings settings;
+            settings.setValue("accessToken", "");
+            settings.setValue("refreshToken", "");
         }
     }
 
@@ -52,6 +56,7 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
             settings.setValue("refreshToken", message["refreshToken"].toString());
             settings.setValue("accessToken", message["accessToken"].toString());
             settings.setValue("username", message["username"].toString());
+            emit login();
         } else {
             emit authMessageReceived(message);
         }
