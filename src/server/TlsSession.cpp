@@ -206,7 +206,7 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
             !params.contains("username") || !params.at("username").is_string() ||
             !params.contains("password") || !params.at("password").is_string()
         ) {
-            return {{"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
         }
 
         std::string username = json::value_to<std::string>(params.at("username"));
@@ -214,18 +214,18 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
 
         ValidationResult result = validateEmail(username);
         if (result.has_value()) {
-            return {{"status", "error"}, {"message", result->message}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", result->message}};
         }
 
         result = validatePassword(password);
         if (result.has_value()) {
-            return {{"status", "error"}, {"message", result->message}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", result->message}};
         }
 
         //  check is user exist
         auto user = m_dbManager->getUserByEmail(username);
         if (user.has_value()) {
-            return {{"status", "error"}, {"message", "User already exists"}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "User already exists"}};
         }
         //  hash password
         std::vector<byte> salt = CryptoUtils::saltBin();
@@ -236,26 +236,26 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
         //  create user
         auto user_id = m_dbManager->addUser(username, hash_hex, salt_hex, "ACTIVE");
         if (!user_id.has_value()) {
-            return {{"status", "error"}, {"message", "Failed to create user"}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to create user"}};
         }
 
         //  send activation email
         //! TODO
         if (!m_dbManager->setUserVerified(user_id.value(), true)) {
-            return {{"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
 
         //  set vpn ip
         auto ip_prefix_ = ConfigManager::getInstance().getValue<std::string>("vpnserver::network_prefix");
         if (!ip_prefix_.has_value()) {
-            return {{"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
         auto ip = m_dbManager->findFreeVpnIp(*ip_prefix_);
         if (!ip.has_value()) {
-            return {{"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
         if (!m_dbManager->assignVpnIpToUser(user_id.value(), *ip)) {
-            return {{"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
 
         // Creating new vpn client
@@ -263,13 +263,12 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
     }
     catch (const std::exception& e) {
         std::cerr << "[SESSION " << this << "] Failed to create user: " << e.what() << std::endl;
-        return {{"status", "error"}, {"message", "Failed to create user: " + std::string(e.what())}};
+        return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to create user: " + std::string(e.what())}};
     }
 
     return {{"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
 }
 
-// Приклад обробника логіну (дуже спрощено)
 json::value TlsSession::processLoginRequest(const json::object& params) {
     try {
         //  validate params
@@ -277,7 +276,7 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
             !params.contains("username") || !params.at("username").is_string() ||
             !params.contains("password") || !params.at("password").is_string()
         ) {
-            return {{"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};    
+            return {{"restonseTo", "login"}, {"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};    
         }
 
         std::string username = json::value_to<std::string>(params.at("username"));
@@ -285,18 +284,18 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
 
         ValidationResult result = validateEmail(username);
         if (result.has_value()) {
-            return {{"status", "error"}, {"message", result->message}};
+            return {{"restonseTo", "login"}, {"status", "error"}, {"message", result->message}};
         }
 
         result = validatePassword(password);
         if (result.has_value()) {
-            return {{"status", "error"}, {"message", result->message}};
+            return {{"restonseTo", "login"}, {"status", "error"}, {"message", result->message}};
         }
 
         //  check cridentals
         auto user = m_dbManager->getUserByEmail(username);
         if (!user.has_value()) {
-            return {{"status", "error"}, {"message", "User not found"}};
+            return {{"restonseTo", "login"}, {"status", "error"}, {"message", "User not found"}};
         }
 
         if (!CryptoUtils::verifyPassword(
@@ -304,7 +303,7 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
             user->salt,
             user->password_hash
         )) {
-            return {{"status", "error"}, {"message", "Invalid password"}};
+            return {{"restonseTo", "login"}, {"status", "error"}, {"message", "Invalid password"}};
         }
 
         m_currentUser = user.value();
@@ -313,7 +312,9 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
         auto accessToken = CryptoUtils::generateAccessTokenBase64(
             {
                 {"user_id", m_currentUser.id},
-                {"email", m_currentUser.email}
+                {"email", m_currentUser.email},
+                {"iat", std::to_string(getCurrentTimestamp())},
+                {"exp", std::to_string(getFutureTimestamp(30 * 60))}
             },
             m_server_ptr->m_key
         );
@@ -325,7 +326,7 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
             m_currentUser.id,
             refreshTokenHash,
             "none",
-            60
+            7 * 24 * 60 * 60
         );
 
         std::cout << "[SESSION " << this << "] Login successful. ONLY FOR TESTING!!!" << std::endl;
@@ -342,11 +343,60 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
 
     } catch (const std::exception& e) {
         std::cerr << "[SESSION " << this << "] Failed to login: " << e.what() << std::endl;
-        return {{"status", "error"}, {"message", "Failed to login: " + std::string(e.what())}};
+        return {{"restonseTo", "login"}, {"status", "error"}, {"message", "Failed to login: " + std::string(e.what())}};
     }
     return {{"status", "success"}, {"message", "Login request received (implement actual logic)"}};
 }
 
+json::value TlsSession::procesRestoreSessionRequest(const json::object& params) {
+    try {
+        //  validate params
+        if (
+            !params.contains("refreshToken") || !params.at("refreshToken").is_string()
+        ) {
+            return {{"responseTo", "restoreSession"}, {"status", "error"}, {"message", "Missing or invalid 'refreshToken' field"}};    
+        }
+
+        std::string refreshToken = json::value_to<std::string>(params.at("refreshToken"));
+
+        auto refreshTokenHash = CryptoUtils::bin2hex(
+            CryptoUtils::hashTokenBin(refreshToken)
+        );
+
+        auto token = m_dbManager->getValidRefreshTokenByHash(refreshTokenHash);
+        if (!token.has_value()) {
+            return {{"responseTo", "restoreSession"}, {"status", "error"}, {"message", "Invalid refresh token"}};
+        }
+
+        auto user = m_dbManager->getUserById(token->user_id);
+        if (!user.has_value()) {
+            return {{"responseTo", "restoreSession"}, {"status", "error"}, {"message", "User not found"}};
+        }
+
+        m_currentUser = user.value();
+
+        auto accessToken = CryptoUtils::generateAccessTokenBase64(
+            {
+                {"user_id", m_currentUser.id},
+                {"email", m_currentUser.email},
+                {"iat", std::to_string(getCurrentTimestamp())},
+                {"exp", std::to_string(getFutureTimestamp(30 * 60))}
+            },
+            m_server_ptr->m_key
+        );
+
+        return {
+            {"responseTo", "restoreSession"},
+            {"status", "success"},
+            {"accessToken", accessToken},
+            //{"username", m_currentUser.email}
+        };
+
+    } catch (const std::exception& e) {
+        std::cerr << "[SESSION " << this << "] Failed to restore session: " << e.what() << std::endl;
+        return {{"responseTo", "restoreSession"}, {"status", "error"}, {"message", "Failed to restore session: " + std::string(e.what())}};
+    }
+}
 
 void TlsSession::queue_write(json::value message) {
     // Серіалізуємо JSON у рядок

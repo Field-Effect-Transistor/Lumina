@@ -62,11 +62,24 @@ private:
     json::value handle_request(const json::value& request);
     json::value processRegisterRequest(const json::object& params);
     json::value processLoginRequest(const json::object& params);
+    json::value procesRestoreSessionRequest(const json::object& params);
     json::value processLogoutRequest(const json::object& params);
+    
 
     void queue_write(json::value message); // Додати JSON повідомлення в чергу
     void do_write(); // Взяти з черги і відправити
     void on_write_done(boost::system::error_code ec, std::size_t bytes_transferred);
 
     void close_socket(boost::system::error_code ec, const std::string& reason = "");
+
+    inline long long getCurrentTimestamp() {
+        const auto now = std::chrono::system_clock::now();
+        return std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+    }
+
+    inline long long getFutureTimestamp(int secondsToAdd) {
+        const auto now = std::chrono::system_clock::now();
+        const auto future_time = now + std::chrono::seconds(secondsToAdd);
+        return std::chrono::duration_cast<std::chrono::seconds>(future_time.time_since_epoch()).count();
+    }
 };
