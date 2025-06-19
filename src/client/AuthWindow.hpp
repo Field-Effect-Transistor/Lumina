@@ -19,11 +19,16 @@
 #include "RestoreDialog.hpp"
 
 class LuminaTlsClient;
+class MessageDispatcher;
 
 class AuthWindow : public QWidget {
     Q_OBJECT
 public:
-    explicit AuthWindow(QWidget *parent, LuminaTlsClient* client);
+    explicit AuthWindow(
+        LuminaTlsClient* client,
+        MessageDispatcher* dispatcher,
+        QWidget *parent = nullptr
+    );
     ~AuthWindow() {};
 
 private:
@@ -50,15 +55,17 @@ private:
     QPushButton* changePageButton;
 
     LuminaTlsClient* m_tlsClient;
+    MessageDispatcher* m_dispatcher;
 
 private slots:
     void onChangePageButtonClicked();
     void onRestoreLinkClicked();
     void onLoginButtonClicked();
     void onRegButtonClicked();
+    void onDisconnected();
 
-    void validatePass(const QLineEdit* passLine);
-    void validatePassConfirm(const QLineEdit* passLine, const QLineEdit* passConfLine);
-    void validateEmail(const QLineEdit* emailLine);
+    void validatePass(QLineEdit* passLine);
+    void validatePassConfirm(const QLineEdit* passLine, QLineEdit* passConfLine);
+    void validateEmail(QLineEdit* emailLine);
 
 };

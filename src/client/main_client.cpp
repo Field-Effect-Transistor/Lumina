@@ -7,6 +7,7 @@
 #include "AuthWindow.hpp"
 #include "LuminaTlsClient.hpp"
 #include "ConfigManager.hpp"
+#include "MessageDispatcher.hpp"
 
 //static LuminaTlsClient *client = nullptr;
 
@@ -40,8 +41,10 @@ int main(int argc, char *argv[]) {
         *ConfigManager::getInstance().getValue<int64_t>("tls::port")
     );
 
-    AuthWindow w(nullptr, &client);
-    w.show();
+    MessageDispatcher dispatcher(&client);
+
+    AuthWindow w(&client, &dispatcher);
+    //w.show();
     auto result = a.exec();
     return result;
 }
