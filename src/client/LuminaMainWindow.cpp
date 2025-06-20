@@ -43,7 +43,7 @@ LuminaMainWindow::LuminaMainWindow(
     setFixedWidth(330);   
 
     connect(m_dispatcher, &MessageDispatcher::loginSuccess, this, &LuminaMainWindow::onLoginSuccess);
-    connect(m_dispatcher, &MessageDispatcher::startMainWindow, this, &LuminaMainWindow::onLoginSuccess);
+    //connect(m_dispatcher, &MessageDispatcher::startMainWindow, this, &LuminaMainWindow::onLoginSuccess);
     connect(this, &LuminaMainWindow::sendMessage, m_dispatcher, &MessageDispatcher::onMessageSended);
     connect(m_logoutButton, &QPushButton::clicked, this, &LuminaMainWindow::onLogoutButtonClicked);
     connect(m_dispatcher, &MessageDispatcher::mainMessageReceived, this, &LuminaMainWindow::onMessageReceived);

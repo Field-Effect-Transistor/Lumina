@@ -3,6 +3,9 @@
 #pragma once
 
 #include <QObject>
+#include <QJsonObject>
+
+#include <optional>
 
 class LuminaTlsClient;
 
@@ -15,9 +18,11 @@ public:
 private:
     LuminaTlsClient *m_tlsClient;
 
+    std::optional<QJsonObject> m_lastRequest;
+
 signals: 
     void startAuth();
-    void startMainWindow();
+    //void startMainWindow();
     void authMessageReceived(const QJsonObject& message);
     void mainMessageReceived(const QJsonObject& message);
     void loginSuccess();
