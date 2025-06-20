@@ -3,12 +3,15 @@
 #include "LuminaMainWindow.hpp"
 
 #include "GroupWidget.hpp"
+#include "CommandRunner.hpp"
 
 #include <QStatusBar>
 #include <QWidget>
 #include <QSettings>
 #include <QApplication>
 #include <QSettings>
+
+#include <fstream>
 
 LuminaMainWindow::LuminaMainWindow(
     MessageDispatcher *dispatcher,
@@ -42,12 +45,15 @@ LuminaMainWindow::LuminaMainWindow(
     setMinimumHeight(300);
     setFixedWidth(330);   
 
+    m_commandRunner = new CommandRunner(this);
+
     connect(m_dispatcher, &MessageDispatcher::loginSuccess, this, &LuminaMainWindow::onLoginSuccess);
     //connect(m_dispatcher, &MessageDispatcher::startMainWindow, this, &LuminaMainWindow::onLoginSuccess);
     connect(this, &LuminaMainWindow::sendMessage, m_dispatcher, &MessageDispatcher::onMessageSended);
     connect(m_logoutButton, &QPushButton::clicked, this, &LuminaMainWindow::onLogoutButtonClicked);
     connect(m_dispatcher, &MessageDispatcher::mainMessageReceived, this, &LuminaMainWindow::onMessageReceived);
     connect(m_dispatcher, &MessageDispatcher::disconnected, this, &LuminaMainWindow::onDisconnected);
+    connect(this, &LuminaMainWindow::disconnect, m_commandRunner, &CommandRunner::stopCommand);
 }
 
 void LuminaMainWindow::onLoginSuccess() {
@@ -99,11 +105,34 @@ void LuminaMainWindow::updateGroups(const QJsonArray& groups) {
 }
 
 void LuminaMainWindow::onMessageReceived(const QJsonObject& message) {
-    if (message["command"].toString() == "getGroups") {
+    if (message["responseTo"].toString() == "getGroups") {
         updateGroups(message["groups"].toArray());
+    } else if (message["responseTo"].toString() == "ovpn") {
+        m_connectButton->setText("Disconnect");
+        std::ofstream file("/tmp/lumina.ovpn");
+        file << message["ovpn"].toString().toStdString();
+        file.close();
+        m_commandRunner->startCommand("openvpn", QStringList() << "--config" << "/tmp/lumina.ovpn");
     }
 }
 
 void LuminaMainWindow::onDisconnected() {
     hide();
+}
+
+void LuminaMainWindow::onConnectButtonClicked() {
+    if (m_connectButton->text() == "Connect") {
+        QSettings settings;
+        QString accessToken =  settings.value("accessToken").toString();
+    
+        QJsonObject request;
+        request["command"] = "ovpn";
+        QJsonObject params;
+        params["accessToken"] = accessToken;
+        request["params"] = params;
+        emit sendMessage(request);
+    } else {
+        emit disconnect();
+        m_connectButton->setText("Connect");
+    }
 }

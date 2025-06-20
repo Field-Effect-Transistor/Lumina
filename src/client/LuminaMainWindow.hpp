@@ -13,6 +13,7 @@
 #include "MessageDispatcher.hpp"
 
 class GroupWidget;
+class CommandRunner;
 
 class LuminaMainWindow : public QMainWindow {
     Q_OBJECT
@@ -33,9 +34,12 @@ private:
 
     MessageDispatcher *m_dispatcher;
 
+    CommandRunner* m_commandRunner;
+
 
 signals:
     void sendMessage(const QJsonObject& message);
+    void disconnect();
 
 private slots:
     void onLoginSuccess();
@@ -43,6 +47,8 @@ private slots:
     void onMessageReceived(const QJsonObject& message);
     void updateGroups(const QJsonArray& groups);
     void onDisconnected();
+
+    void onConnectButtonClicked();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
