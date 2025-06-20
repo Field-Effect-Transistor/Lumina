@@ -332,7 +332,7 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
             m_currentUser.id,
             refreshTokenHash,
             "none",
-            7 * 24 * 60 * 60
+            TlsSession::refreshTokenLifetime
         );
 
         std::cout << "[SESSION " << this << "] Login successful. ONLY FOR TESTING!!!" << std::endl;
