@@ -319,8 +319,8 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
             {
                 {"user_id", m_currentUser.id},
                 {"email", m_currentUser.email},
-                {"iat", std::to_string(getCurrentTimestamp())},
-                {"exp", std::to_string(getFutureTimestamp(30 * 60))}
+                {"iat", getCurrentTimestamp()},
+                {"exp", getFutureTimestamp(30 * 60)}
             },
             m_server_ptr->m_key
         );
@@ -385,8 +385,8 @@ json::value TlsSession::processRestoreSessionRequest(const json::object& params)
             {
                 {"user_id", m_currentUser.id},
                 {"email", m_currentUser.email},
-                {"iat", std::to_string(getCurrentTimestamp())},
-                {"exp", std::to_string(getFutureTimestamp(30 * 60))}
+                {"iat", getCurrentTimestamp()},
+                {"exp", getFutureTimestamp(30 * 60)}
             },
             m_server_ptr->m_key
         );
