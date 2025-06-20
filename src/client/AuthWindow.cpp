@@ -138,7 +138,7 @@ AuthWindow::AuthWindow(
     //  to receive messages through dispatcher
     connect(m_dispatcher, &MessageDispatcher::authMessageReceived, this, &AuthWindow::onMessageReceived);
 
-    connect(m_dispatcher, &MessageDispatcher::login, this, &AuthWindow::onLogin);
+    connect(m_dispatcher, &MessageDispatcher::loginSuccess, this, &AuthWindow::onLogin);
 }
 
 void AuthWindow::onChangePageButtonClicked() {
@@ -317,9 +317,10 @@ void AuthWindow::onMessageReceived(const QJsonObject& message) {
     QString responseTo = message["responseTo"].toString();
     QString status = message["status"].toString();
 
-    if (responseTo == "login" || true) {
+    if (responseTo == "login") {
         if (status == "error") {
-            QMessageBox::warning(this, "Error", message["message"].toString());
+            //QMessageBox::warning(this, "Error", message["message"].toString());
+            QMessageBox::warning(this, "Error", QString("Wrong username or password"));
         }
     }
 }

@@ -19,7 +19,8 @@ signals:
     void startAuth();
     void startMainWindow();
     void authMessageReceived(const QJsonObject& message);
-    void login();
+    void mainMessageReceived(const QJsonObject& message);
+    void loginSuccess();
 
 
 public slots:

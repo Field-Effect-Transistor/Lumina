@@ -39,8 +39,8 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
         } else {
             emit startAuth();
             QSettings settings;
-            settings.setValue("accessToken", "");
-            settings.setValue("refreshToken", "");
+            settings.remove("accessToken");
+            settings.remove("refreshToken");
         }
     }
 
@@ -56,9 +56,17 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
             settings.setValue("refreshToken", message["refreshToken"].toString());
             settings.setValue("accessToken", message["accessToken"].toString());
             settings.setValue("username", message["username"].toString());
-            emit login();
+            emit loginSuccess();
         } else {
             emit authMessageReceived(message);
+        }
+    }
+
+    if (responseTo == "getGroups") {
+        if (status == "success") {
+            emit mainMessageReceived(message);   
+        } else {
+            qDebug() << "Failed to get groups" << message["message"].toString();    
         }
     }
 }

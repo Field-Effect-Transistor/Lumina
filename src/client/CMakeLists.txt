@@ -12,6 +12,9 @@ add_executable( lumina_client
     LuminaTlsClient.cpp
     MessageDispatcher.cpp
     LuminaMainWindow.cpp
+    Pinger.cpp
+    GroupWidget.cpp
+    GroupMemberWidget.cpp
 #   resources
     resources/resources.qrc
 )

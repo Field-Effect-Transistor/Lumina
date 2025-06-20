@@ -42,9 +42,9 @@ int main(int argc, char *argv[]) {
 
     MessageDispatcher dispatcher(&client);
 
-    AuthWindow w(&dispatcher);
-    LuminaMainWindow mainWindow(&dispatcher);
-    //w.show();
+    AuthWindow authWindow(&dispatcher);
+    LuminaMainWindow mainWindow(&dispatcher, &authWindow); ;
+    //authWindow.show();
 
     client.connectToServer(
         host.c_str(),
