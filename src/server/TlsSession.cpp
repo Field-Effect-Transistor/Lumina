@@ -179,6 +179,8 @@ json::value TlsSession::handle_request(const json::value& request) {
         return {{"status", "error"}, {"message", "Missing or invalid 'command' field"}};
     }
 
+    std::cout << "[SESSION " << this << "] Received request: " << request << std::endl;
+
     std::string command = json::value_to<std::string>(req_obj.at("command"));
     json::object params; // Параметри для команди
     if (req_obj.contains("params") && req_obj.at("params").is_object()) {

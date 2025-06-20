@@ -66,7 +66,7 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
         if (status == "success") {
             emit mainMessageReceived(message);   
         } else {
-            qDebug() << "Failed to get groups" << message["message"].toString();    
+            qDebug() << "[Dispatcher] Failed to get groups" << message["message"].toString();    
         }
     }
 
@@ -93,5 +93,6 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
 }
 
 void MessageDispatcher::onMessageSended(const QJsonObject& message) {
+    qDebug() << "Message sent:" << message;
     m_tlsClient->sendMessage(message);
 }
