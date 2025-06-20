@@ -107,6 +107,13 @@ void VpnServer::stopVpnServer() {
     }
     m_is_vpn_server_running = false;
     std::cout << "[VPN SERVER]" << "OpenVPN server stopped." << std::endl;
+
+    command = (m_scripts_dir / "group.sh").string() + " save";
+    result = execute(command);
+    if (result.exit_code != 0) {
+        throw std::runtime_error("Failed to save groups: " + result.output);
+    }
+    std::cout << "[VPN SERVER]" << "Groups saved." << std::endl;
 }
 
 void VpnServer::addClient(

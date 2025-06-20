@@ -66,6 +66,7 @@ private:
     json::value processLoginRequest(const json::object& params);
     json::value processRestoreSessionRequest(const json::object& params);
     json::value processGetGroupsRequest(const json::object& params);
+    json::value processOvpnRequest(const json::object& params);
     //json::value processLogoutRequest(const json::object& params);
     
 
