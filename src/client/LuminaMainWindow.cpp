@@ -53,9 +53,12 @@ void LuminaMainWindow::onLoginSuccess() {
     //  get groups
     QSettings settings;
     QString accessToken =  settings.value("accessToken").toString();
+
     QJsonObject request;
     request["command"] = "getGroups";
-    request["accessToken"] = accessToken;
+    QJsonObject params;
+    params["accessToken"] = accessToken;
+    request["params"] = params;
     emit sendMessage(request);
 
     show();

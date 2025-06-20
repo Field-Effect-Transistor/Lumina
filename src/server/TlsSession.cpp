@@ -430,7 +430,7 @@ json::value TlsSession::processGetGroupsRequest(const json::object& params) {
             return {
                 {"responseTo", "any"},
                 {"status", "updateAccessToken"},
-                {"request", params}
+                {"request", {"command", "getGroups"}}
             };
         }
 
