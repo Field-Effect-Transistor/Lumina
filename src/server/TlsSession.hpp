@@ -62,8 +62,9 @@ private:
     json::value handle_request(const json::value& request);
     json::value processRegisterRequest(const json::object& params);
     json::value processLoginRequest(const json::object& params);
-    json::value procesRestoreSessionRequest(const json::object& params);
-    json::value processLogoutRequest(const json::object& params);
+    json::value processRestoreSessionRequest(const json::object& params);
+    json::value processGetGroupsRequest(const json::object& params);
+    //json::value processLogoutRequest(const json::object& params);
     
 
     void queue_write(json::value message); // Додати JSON повідомлення в чергу

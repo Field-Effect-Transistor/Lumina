@@ -15,12 +15,15 @@ namespace CryptoUtils {
     using byte = unsigned char;
 
     void init(void);
+    
     std::vector<byte> saltBin(int length = crypto_pwhash_SALTBYTES);
+    
     std::vector<byte> hashPassword(
         const std::string& password,
         const std::vector<byte>& salt_bin,
         size_t hash_length = 32
     );
+    
     bool verifyPassword(
         const std::string& password,
         const std::string& salt_hex,
@@ -68,6 +71,18 @@ namespace CryptoUtils {
         const std::string& key
     );
 
+    /**
+     * @brief Validates and decodes an access token represented as a Base64 string.
+     *
+     * @param token_base64 Access token as a Base64 string.
+     * @param key Private key for decryption and authentication.
+     *
+     * @return Decoded payload as a JSON object if the token is valid, otherwise std::nullopt.
+     *
+     * @throws std::runtime_error If the key size is invalid or if the token is empty.
+     *
+     * This function will also print error messages to cerr if the token is invalid in any way.
+     */
     std::optional<boost::json::object> validateAccessTokenBase64(
         const std::string& token,
         const std::string& key
