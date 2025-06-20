@@ -35,7 +35,7 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
         if ( status == "success") {
             QSettings settings;
             settings.setValue("accessToken", message["accessToken"].toString());
-            emit startMainWindow();
+            emit loginSuccess();
         } else {
             emit startAuth();
             QSettings settings;
@@ -68,6 +68,27 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
         } else {
             qDebug() << "Failed to get groups" << message["message"].toString();    
         }
+    }
+
+    if (responseTo == "any") {
+        if (status == "updateAccessToken") {
+            m_lastRequest = message["request"].toObject();
+
+            QSettings settings;
+            QString refreshToken = settings.value("refreshToken").toString();
+            QJsonObject request;
+            request["command"] = "restoreSession";
+            QJsonObject params;
+            params["refreshToken"] = refreshToken;
+            request["params"] = params;
+            m_tlsClient->sendMessage(request);
+        }
+    }
+
+    if (m_lastRequest.has_value()) {
+        m_lastRequest.value()["accessToken"] = message["accessToken"].toString();
+        m_tlsClient->sendMessage(m_lastRequest.value());
+        m_lastRequest = std::nullopt;
     }
 }
 
