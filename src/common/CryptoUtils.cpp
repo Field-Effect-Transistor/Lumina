@@ -1,4 +1,4 @@
-// CryptoUtils.cpp (виправлена версія)
+// CryptoUtils.cpp
 
 #include "CryptoUtils.hpp"
 

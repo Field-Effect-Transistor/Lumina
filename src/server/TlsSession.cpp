@@ -195,7 +195,9 @@ json::value TlsSession::handle_request(const json::value& request) {
     } else if (command == "logout") {
         //return processLogoutRequest(params);
     } else if (command == "restoreSession") {
-        return procesRestoreSessionRequest(params);
+        return processRestoreSessionRequest(params);
+    } else if (command == "getGroups") {
+        return processGetGroupsRequest(params);
     }
     return {{"status", "error"}, {"message", "Unknown command: " + command}};
 }
@@ -208,7 +210,7 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
             !params.contains("username") || !params.at("username").is_string() ||
             !params.contains("password") || !params.at("password").is_string()
         ) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};
         }
 
         std::string username = json::value_to<std::string>(params.at("username"));
@@ -216,18 +218,18 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
 
         ValidationResult result = validateEmail(username);
         if (result.has_value()) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", result->message}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", result->message}};
         }
 
         result = validatePassword(password);
         if (result.has_value()) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", result->message}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", result->message}};
         }
 
         //  check is user exist
         auto user = m_dbManager->getUserByEmail(username);
         if (user.has_value()) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "User already exists"}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", "User already exists"}};
         }
         //  hash password
         std::vector<byte> salt = CryptoUtils::saltBin();
@@ -238,26 +240,26 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
         //  create user
         auto user_id = m_dbManager->addUser(username, hash_hex, salt_hex, "ACTIVE");
         if (!user_id.has_value()) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to create user"}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", "Failed to create user"}};
         }
 
         //  send activation email
         //! TODO
         if (!m_dbManager->setUserVerified(user_id.value(), true)) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
 
         //  set vpn ip
         auto ip_prefix_ = ConfigManager::getInstance().getValue<std::string>("vpnserver::network_prefix");
         if (!ip_prefix_.has_value()) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
         auto ip = m_dbManager->findFreeVpnIp(*ip_prefix_);
         if (!ip.has_value()) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
         if (!m_dbManager->assignVpnIpToUser(user_id.value(), *ip)) {
-            return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
+            return {{"responseTo", "register"}, {"status", "error"}, {"message", "Failed to set user as verified"}};
         }
 
         // Creating new vpn client
@@ -265,7 +267,7 @@ json::value TlsSession::processRegisterRequest(const json::object& params) {
     }
     catch (const std::exception& e) {
         std::cerr << "[SESSION " << this << "] Failed to create user: " << e.what() << std::endl;
-        return {{"restonseTo", "register"}, {"status", "error"}, {"message", "Failed to create user: " + std::string(e.what())}};
+        return {{"responseTo", "register"}, {"status", "error"}, {"message", "Failed to create user: " + std::string(e.what())}};
     }
 
     return {{"status", "success"}, {"message", "Registration request received (implement actual logic)"}};
@@ -278,7 +280,7 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
             !params.contains("username") || !params.at("username").is_string() ||
             !params.contains("password") || !params.at("password").is_string()
         ) {
-            return {{"restonseTo", "login"}, {"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};    
+            return {{"responseTo", "login"}, {"status", "error"}, {"message", "Missing or invalid 'username' or 'password' field"}};    
         }
 
         std::string username = json::value_to<std::string>(params.at("username"));
@@ -286,18 +288,18 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
 
         ValidationResult result = validateEmail(username);
         if (result.has_value()) {
-            return {{"restonseTo", "login"}, {"status", "error"}, {"message", result->message}};
+            return {{"responseTo", "login"}, {"status", "error"}, {"message", result->message}};
         }
 
         result = validatePassword(password);
         if (result.has_value()) {
-            return {{"restonseTo", "login"}, {"status", "error"}, {"message", result->message}};
+            return {{"responseTo", "login"}, {"status", "error"}, {"message", result->message}};
         }
 
         //  check cridentals
         auto user = m_dbManager->getUserByEmail(username);
         if (!user.has_value()) {
-            return {{"restonseTo", "login"}, {"status", "error"}, {"message", "User not found"}};
+            return {{"responseTo", "login"}, {"status", "error"}, {"message", "User not found"}};
         }
 
         if (!CryptoUtils::verifyPassword(
@@ -305,7 +307,7 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
             user->salt,
             user->password_hash
         )) {
-            return {{"restonseTo", "login"}, {"status", "error"}, {"message", "Invalid password"}};
+            return {{"responseTo", "login"}, {"status", "error"}, {"message", "Invalid password"}};
         }
 
         m_currentUser = user.value();
@@ -345,12 +347,12 @@ json::value TlsSession::processLoginRequest(const json::object& params) {
 
     } catch (const std::exception& e) {
         std::cerr << "[SESSION " << this << "] Failed to login: " << e.what() << std::endl;
-        return {{"restonseTo", "login"}, {"status", "error"}, {"message", "Failed to login: " + std::string(e.what())}};
+        return {{"responseTo", "login"}, {"status", "error"}, {"message", "Failed to login: " + std::string(e.what())}};
     }
     return {{"status", "success"}, {"message", "Login request received (implement actual logic)"}};
 }
 
-json::value TlsSession::procesRestoreSessionRequest(const json::object& params) {
+json::value TlsSession::processRestoreSessionRequest(const json::object& params) {
     try {
         //  validate params
         if (
@@ -397,6 +399,67 @@ json::value TlsSession::procesRestoreSessionRequest(const json::object& params) 
     } catch (const std::exception& e) {
         std::cerr << "[SESSION " << this << "] Failed to restore session: " << e.what() << std::endl;
         return {{"responseTo", "restoreSession"}, {"status", "error"}, {"message", "Failed to restore session: " + std::string(e.what())}};
+    }
+}
+
+json::value TlsSession::processGetGroupsRequest(const json::object& params) {
+    try {
+        //  validate params
+        if (
+            !params.contains("accessToken") || !params.at("accessToken").is_string()
+        ) {
+            return {{"responseTo", "getGroups"}, {"status", "error"}, {"message", "Missing or invalid 'accessToken' field"}};    
+        }
+
+        std::string accessToken = json::value_to<std::string>(params.at("accessToken"));
+        auto payload = CryptoUtils::validateAccessTokenBase64(
+            accessToken,
+            m_server_ptr->m_key    
+        );
+
+        if (!payload.has_value()) {
+            return {{"responseTo", "getGroups"}, {"status", "error"}, {"message", "Invalid access token"}};
+        }
+
+        if (
+            payload->at("exp").as_int64() < getCurrentTimestamp() &&
+            payload->at("user_id").as_int64() != m_currentUser.id
+        ) {
+            return {
+                {"responseTo", "any"},
+                {"status", "updateAccessToken"},
+                {"request", params}
+            };
+        }
+
+        auto userGroups = m_dbManager->getUserGroups(m_currentUser.id);
+        boost::json::array groups;
+        for (const auto& group : userGroups) {
+            boost::json::object group_obj;
+            group_obj["id"] = group.id;
+            group_obj["name"] = group.name;
+            auto members = m_dbManager->getGroupMembers(group.id);
+            boost::json::array members_array;
+            for (const auto& member : members) {
+                boost::json::object member_obj;
+                member_obj["id"] = member.id;
+                member_obj["name"] = member.email;
+                member_obj["ip"] = *member.vpn_ip;
+                members_array.push_back(member_obj);
+            }
+            group_obj["members"] = members_array;
+            groups.push_back(group_obj);
+        }
+
+        return {
+            {"responseTo", "getGroups"},
+            {"status", "success"},
+            {"groups", groups}
+        };
+
+    } catch (const std::exception& e) {
+        std::cerr << "[SESSION " << this << "] Failed to get groups: " << e.what() << std::endl;
+        return {{"responseTo", "getGroups"}, {"status", "error"}, {"message", "Failed to get groups: " + std::string(e.what())}};
     }
 }
 
