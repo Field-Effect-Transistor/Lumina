@@ -200,6 +200,8 @@ json::value TlsSession::handle_request(const json::value& request) {
         return processRestoreSessionRequest(params);
     } else if (command == "getGroups") {
         return processGetGroupsRequest(params);
+    } else if (command == "ovpn") {
+        return processOvpnRequest(params);
     }
     return {{"status", "error"}, {"message", "Unknown command: " + command}};
 }
@@ -462,6 +464,49 @@ json::value TlsSession::processGetGroupsRequest(const json::object& params) {
     } catch (const std::exception& e) {
         std::cerr << "[SESSION " << this << "] Failed to get groups: " << e.what() << std::endl;
         return {{"responseTo", "getGroups"}, {"status", "error"}, {"message", "Failed to get groups: " + std::string(e.what())}};
+    }
+}
+
+json::value TlsSession::processOvpnRequest(const json::object& params) {
+    try {
+        if (
+            !params.contains("accessToken") || !params.at("accessToken").is_string()
+        ) {
+            return {{"responseTo", "ovpn"}, {"status", "error"}, {"message", "Missing or invalid 'accessToken' field"}};    
+        }
+
+        std::string accessToken = json::value_to<std::string>(params.at("accessToken"));
+        auto payload = CryptoUtils::validateAccessTokenBase64(
+            accessToken,
+            m_server_ptr->m_key    
+        );
+
+        if (!payload.has_value()) {
+            return {{"responseTo", "ovpn"}, {"status", "error"}, {"message", "Invalid access token"}};
+        }
+
+        if (
+            payload->at("exp").as_int64() < getCurrentTimestamp() &&
+            payload->at("user_id").as_int64() != m_currentUser.id
+        ) {
+            return {
+                {"responseTo", "any"},
+                {"status", "updateAccessToken"},
+                {"request", {"command", "ovpn"}}
+            };
+        }
+
+        auto ovpn = m_vpn->getOvpn(m_currentUser.email);
+
+        return {
+            {"responseTo", "ovpn"},
+            {"status", "success"},
+            {"ovpn", ovpn}
+        };
+        
+    } catch(const std::exception& e) {
+        std::cerr << "[SESSION " << this << "] Failed to process ovpn request: " << e.what() << std::endl;
+        return {{"responseTo", "ovpn"}, {"status", "error"}, {"message", "Failed to process ovpn request: " + std::string(e.what())}};
     }
 }
 
