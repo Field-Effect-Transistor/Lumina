@@ -66,7 +66,8 @@ private slots:
     void onStartAuth();
     void onMessageReceived(const QJsonObject& message);
     void onLogin();
-
+    void onDisconnected();
+    
     void validatePass(QLineEdit* passLine);
     void validatePassConfirm(const QLineEdit* passLine, QLineEdit* passConfLine);
     void validateEmail(QLineEdit* emailLine);

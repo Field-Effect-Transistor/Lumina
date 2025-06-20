@@ -224,20 +224,19 @@ void LuminaTlsClient::doWrite(const QByteArray& data) {
     }
 }
 
+// LuminaTlsClient.cpp
 void LuminaTlsClient::reconnectToServer() {
     if (m_host.isEmpty() || m_port == 0) {
-        qWarning() << "Cannot reconnect: host or port not set. Call connectToServer() first.";
-        emit errorOccurred("Reconnect failed: Host/port not previously set.");
+        qWarning() << "Cannot reconnect: host or port not set.";
+        // Можливо, тут теж варто повідомити користувача через сигнал
         return;
     }
 
     qDebug() << "Attempting to reconnect to" << m_host << ":" << m_port;
 
     if (m_socket->state() != QAbstractSocket::UnconnectedState) {
-        qDebug() << "Socket is not in UnconnectedState. Aborting current connection before reconnecting.";
-        // Важливо: abort() також викличе onDisconnected(), який очистить черги та стан.
-        m_socket->abort();
+        m_socket->disconnectFromHost();
     }
-    
+
     connectToServer(m_host, m_port);
 }

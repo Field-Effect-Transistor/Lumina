@@ -4,12 +4,16 @@
 #include "LuminaTlsClient.hpp"
 
 #include <QSettings>
+#include <QMessageBox>
+#include <QPointer>
+#include <QApplication>
 
 MessageDispatcher::MessageDispatcher(LuminaTlsClient *client, QObject *parent)
     : QObject(parent),
     m_tlsClient(client) {
     connect(m_tlsClient, &LuminaTlsClient::messageReceived, this, &MessageDispatcher::onMessageReceived);
     connect(m_tlsClient, &LuminaTlsClient::connected, this, &MessageDispatcher::onConnected);
+    connect(m_tlsClient, &LuminaTlsClient::disconnected, this, &MessageDispatcher::onDisconnected);
 }
     
 void MessageDispatcher::onConnected() {
@@ -95,4 +99,28 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
 void MessageDispatcher::onMessageSended(const QJsonObject& message) {
     qDebug() << "Message sent:" << message;
     m_tlsClient->sendMessage(message);
+}
+
+void MessageDispatcher::onDisconnected() {
+    emit disconnected();
+
+    QPointer<QMessageBox> msgBox = new QMessageBox();
+    msgBox->setAttribute(Qt::WA_DeleteOnClose);
+    msgBox->setIcon(QMessageBox::Warning);
+    msgBox->setWindowTitle(tr("З'єднання втрачено"));
+    msgBox->setText(tr("Було втрачено з'єднання з сервером."));
+    msgBox->setInformativeText(tr("Спробувати перепідключитися?"));
+    
+    msgBox->setStandardButtons(QMessageBox::Retry | QMessageBox::Close);
+    msgBox->setDefaultButton(QMessageBox::Retry);
+
+    connect(msgBox, &QMessageBox::finished, this, [this](int result) {
+        if (result == QMessageBox::Retry) {
+            m_tlsClient->reconnectToServer();
+        } else {
+            QApplication::quit();
+        }
+    });
+
+    msgBox->open(); 
 }

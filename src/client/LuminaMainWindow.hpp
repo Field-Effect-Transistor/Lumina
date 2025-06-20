@@ -42,6 +42,7 @@ private slots:
     void onLogoutButtonClicked();
     void onMessageReceived(const QJsonObject& message);
     void updateGroups(const QJsonArray& groups);
+    void onDisconnected();
 
 protected:
     void closeEvent(QCloseEvent *event) override;

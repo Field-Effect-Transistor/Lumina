@@ -6,8 +6,8 @@
 
 #include <QJsonObject>
 #include <QDebug>
-#include <QMessageBox>
 #include <QSettings>
+#include <QMessageBox>
 
 AuthWindow::AuthWindow(
     MessageDispatcher* dispatcher,
@@ -139,6 +139,7 @@ AuthWindow::AuthWindow(
     connect(m_dispatcher, &MessageDispatcher::authMessageReceived, this, &AuthWindow::onMessageReceived);
 
     connect(m_dispatcher, &MessageDispatcher::loginSuccess, this, &AuthWindow::onLogin);
+    connect(m_dispatcher, &MessageDispatcher::disconnected, this, &AuthWindow::onDisconnected);
 }
 
 void AuthWindow::onChangePageButtonClicked() {
@@ -259,54 +260,19 @@ void AuthWindow::validateEmail(QLineEdit* emailLine) {
     }
 }
 
-/*
+
 void AuthWindow::onDisconnected() {
     this->hide();
-
-    QMessageBox msgBox(this);
-    msgBox.setIcon(QMessageBox::Warning);
-    msgBox.setWindowTitle(tr("З'єднання втрачено"));
-    msgBox.setText(tr("Було втрачено з'єднання з сервером."));
-    msgBox.setInformativeText(tr("Спробувати перепідключитися?"));
-    
-    msgBox.setStandardButtons(QMessageBox::Retry | QMessageBox::Close);
-    msgBox.setDefaultButton(QMessageBox::Retry);
-
-    int choice = msgBox.exec();
-
-    if (choice == QMessageBox::Retry) {
-        m_tlsClient->reconnectToServer();
-    } else {
-        this->close();
-    }
 }
-*/
+
 void AuthWindow::onLogin() {
     hide(); 
-    loginUsernameInput->text() = "";
-    loginPasswordInput->text() = "";
-    onChangePageButtonClicked();
-}
-/*
-void AuthWindow::onConnected() {
-    QSettings settings;
-    auto username = settings.value("username");
-    auto accessToken = settings.value("accessToken");
-
-    if (!username.isNull() && !accessToken.isNull()) {
-        QJsonObject request;
-        request["command"] = "restoreSession";
-        QJsonObject params;
-        params["username"] = username.toString();
-        params["accessToken"] = accessToken.toString();
-        request["params"] = params;
-        m_tlsClient->sendMessage(request);
-    } else {
-        show();
+    loginUsernameInput->setText("");
+    loginPasswordInput->setText("");
+    if (authWidget->currentIndex() != 0) {
+        onChangePageButtonClicked();
     }
 }
-
-//*/
 
 void AuthWindow::onStartAuth() {
     show();

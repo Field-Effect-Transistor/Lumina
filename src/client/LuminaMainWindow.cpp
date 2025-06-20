@@ -47,6 +47,7 @@ LuminaMainWindow::LuminaMainWindow(
     connect(this, &LuminaMainWindow::sendMessage, m_dispatcher, &MessageDispatcher::onMessageSended);
     connect(m_logoutButton, &QPushButton::clicked, this, &LuminaMainWindow::onLogoutButtonClicked);
     connect(m_dispatcher, &MessageDispatcher::mainMessageReceived, this, &LuminaMainWindow::onMessageReceived);
+    connect(m_dispatcher, &MessageDispatcher::disconnected, this, &LuminaMainWindow::onDisconnected);
 }
 
 void LuminaMainWindow::onLoginSuccess() {
@@ -101,4 +102,8 @@ void LuminaMainWindow::onMessageReceived(const QJsonObject& message) {
     if (message["command"].toString() == "getGroups") {
         updateGroups(message["groups"].toArray());
     }
+}
+
+void LuminaMainWindow::onDisconnected() {
+    hide();
 }
