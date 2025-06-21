@@ -75,7 +75,10 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
         }
     } else if (
         responseTo == "ovpn" ||
-        responseTo == "createGroup"
+        responseTo == "createGroup" ||
+        responseTo == "joinGroup" ||
+        responseTo == "leaveGroup" ||
+        responseTo == "deleteGroup"
     ) {
         emit mainMessageReceived(message);
     }

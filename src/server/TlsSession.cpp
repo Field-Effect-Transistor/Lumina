@@ -204,6 +204,12 @@ json::value TlsSession::handle_request(const json::value& request) {
         return processOvpnRequest(params);
     } else if (command == "createGroup") {
         return processCreateGroupRequest(params);
+    } else if (command == "deleteGroup") {
+        return processDeleteGroupRequest(params);
+    } else if (command == "joinGroup") {
+        return processJoinGroupRequest(params);
+    } else if (command == "leaveGroup") {
+        return processLeaveGroupRequest(params);
     }
     return {{"status", "error"}, {"message", "Unknown command: " + command}};
 }

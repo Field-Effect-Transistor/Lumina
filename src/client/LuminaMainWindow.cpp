@@ -155,7 +155,12 @@ void LuminaMainWindow::onMessageReceived(const QJsonObject& message) {
             
             m_process->start(program, arguments);
         }
-    } else if ( responseTo == "createGroup") {
+    } else if ( 
+        responseTo == "createGroup" ||
+        responseTo == "joinGroup" ||
+        responseTo == "leaveGroup" ||
+        responseTo == "deleteGroup"
+    ) {
         if (message["status"].toString() == "error") {
             QMessageBox::warning(this, "Error", message["message"].toString()); 
         } else {
