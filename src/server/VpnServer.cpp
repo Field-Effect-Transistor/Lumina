@@ -67,6 +67,7 @@ std::string VpnServer::sanitize(const std::string& input) const {
 
 void VpnServer::startVpnServer() {
     std::lock_guard<std::mutex> lock(m_mutex);
+
     if (m_is_vpn_server_running) {
         std::cerr << "[VPN SERVER]" <<("OpenVPN server is already running.");
         return;
@@ -78,6 +79,13 @@ void VpnServer::startVpnServer() {
     }
     m_is_vpn_server_running = true;
     std::cout << "[VPN SERVER]" << "OpenVPN server started." << std::endl;
+
+    command = (m_scripts_dir / "group.sh").string() + " restore";
+    result = execute(command);
+    if (result.exit_code != 0) {
+        throw std::runtime_error("Failed to restore groups: " + result.output);
+    }
+    std::cout << "[VPN SERVER]" << "Groups restored." << std::endl;
 }
 
 void VpnServer::restartVpnServer() {
