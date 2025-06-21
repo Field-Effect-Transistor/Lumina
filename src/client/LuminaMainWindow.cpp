@@ -11,6 +11,7 @@
 #include <QSettings>
 #include <QMessageBox>
 #include <QMenuBar>
+#include <QInputDialog>
 
 #include <QNetworkInterface>
 #include <QHostAddress>
@@ -124,9 +125,10 @@ void LuminaMainWindow::updateGroups(const QJsonArray& groups) {
 }
 
 void LuminaMainWindow::onMessageReceived(const QJsonObject& message) {
-    if (message["responseTo"].toString() == "getGroups") {
+    QString responseTo = message["responseTo"].toString();
+    if ( responseTo == "getGroups") {
         updateGroups(message["groups"].toArray());
-    } else if (message["responseTo"].toString() == "ovpn") {
+    } else if ( responseTo == "ovpn") {
         if (message["status"].toString() == "error") {
             QMessageBox::warning(this, "Error", message["message"].toString()); 
         } else {
@@ -143,6 +145,12 @@ void LuminaMainWindow::onMessageReceived(const QJsonObject& message) {
             arguments << "-A" << "openvpn" << "/tmp/lumina.ovpn";
             
             m_process->start(program, arguments);
+        }
+    } else if ( responseTo == "createGroup") {
+        if (message["status"].toString() == "error") {
+            QMessageBox::warning(this, "Error", message["message"].toString()); 
+        } else {
+            askGroups();
         }
     }
 }
@@ -305,7 +313,110 @@ void LuminaMainWindow::askGroups(){
     emit sendMessage(request);    
 };
 
-void LuminaMainWindow::createGroup(){};
-void LuminaMainWindow::deleteGroup(){};
-void LuminaMainWindow::joinGroup(){};
-void LuminaMainWindow::leaveGroup(){};
+void LuminaMainWindow::createGroup(){
+    bool ok;
+    QString groupName = QInputDialog::getText(
+        this,
+        tr("Create Group"),
+        tr("Group Name:"),
+        QLineEdit::Normal,
+        "",
+        &ok
+    );
+
+    if (!ok || groupName.isEmpty()) {
+        return;
+    }
+
+    QSettings settings;
+    QString accessToken =  settings.value("accessToken").toString();
+
+    QJsonObject request;
+    request["command"] = "createGroup";
+    QJsonObject params;
+    params["accessToken"] = accessToken;
+    params["groupName"] = groupName;
+    request["params"] = params;
+    emit sendMessage(request);
+};
+
+void LuminaMainWindow::deleteGroup(){
+    bool ok;
+    QString groupName = QInputDialog::getText(
+        this,
+        tr("Delete Group"),
+        tr("Group Name:"),
+        QLineEdit::Normal,
+        "",
+        &ok
+    );
+
+    if (!ok || groupName.isEmpty()) {
+        return;
+    }
+
+    QSettings settings;
+    QString accessToken =  settings.value("accessToken").toString();
+
+    QJsonObject request;
+    request["command"] = "deleteGroup";
+    QJsonObject params;
+    params["accessToken"] = accessToken;
+    params["groupName"] = groupName;
+    request["params"] = params;
+    emit sendMessage(request);
+};
+
+void LuminaMainWindow::joinGroup(){
+    bool ok;
+    QString groupName = QInputDialog::getText(
+        this,
+        tr("Join Group"),
+        tr("Group Name:"),
+        QLineEdit::Normal,
+        "",
+        &ok
+    );
+
+    if (!ok || groupName.isEmpty()) {
+        return;
+    }
+
+    QSettings settings;
+    QString accessToken =  settings.value("accessToken").toString();
+
+    QJsonObject request;
+    request["command"] = "joinGroup";
+    QJsonObject params;
+    params["accessToken"] = accessToken;
+    params["groupName"] = groupName;
+    request["params"] = params;
+    emit sendMessage(request);
+};
+
+void LuminaMainWindow::leaveGroup(){
+    bool ok;
+    QString groupName = QInputDialog::getText(
+        this,
+        tr("Leave Group"),
+        tr("Group Name:"),
+        QLineEdit::Normal,
+        "",
+        &ok
+    );
+
+    if (!ok || groupName.isEmpty()) {
+        return;
+    }
+
+    QSettings settings;
+    QString accessToken =  settings.value("accessToken").toString();
+
+    QJsonObject request;
+    request["command"] = "leaveGroup";
+    QJsonObject params;
+    params["accessToken"] = accessToken;
+    params["groupName"] = groupName;
+    request["params"] = params;
+    emit sendMessage(request);
+};

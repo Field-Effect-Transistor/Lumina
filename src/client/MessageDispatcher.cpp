@@ -73,14 +73,11 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
         } else {
             qDebug() << "[Dispatcher] Failed to get groups" << message["message"].toString();    
         }
-    }
-
-    if (responseTo == "ovpn") {
-        if (status == "success") {
-            emit mainMessageReceived(message);
-        } else {
-            qDebug() << "[Dispatcher] Failed to get ovpn" << message["message"].toString();
-        }
+    } else if (
+        responseTo == "ovpn" ||
+        responseTo == "createGroup"
+    ) {
+        emit mainMessageReceived(message);
     }
 
     if (responseTo == "any") {

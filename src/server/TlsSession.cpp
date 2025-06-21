@@ -510,6 +510,67 @@ json::value TlsSession::processOvpnRequest(const json::object& params) {
     }
 }
 
+json::value TlsSession::processCreateGroupRequest(const json::object& params) {
+    try {
+        if (
+            !params.contains("accessToken") || !params.at("accessToken").is_string() ||
+            !params.contains("name") || !params.at("name").is_string()
+        ) {
+            return {{"responseTo", "createGroup"}, {"status", "error"}, {"message", "Missing or invalid 'accessToken' or 'name' field"}};    
+        }
+
+        std::string accessToken = json::value_to<std::string>(params.at("accessToken"));
+        auto payload = CryptoUtils::validateAccessTokenBase64(
+            accessToken,
+            m_server_ptr->m_key    
+        );
+
+        if (!payload.has_value()) {
+            return {{"responseTo", "createGroup"}, {"status", "error"}, {"message", "Invalid access token"}};
+        }
+
+        if (
+            payload->at("exp").as_int64() < getCurrentTimestamp() &&
+            payload->at("user_id").as_int64() != m_currentUser.id
+        ) {
+            return {
+                {"responseTo", "any"},
+                {"status", "updateAccessToken"},
+                {"request", {"command", "createGroup"},
+                    {"name", params.at("name")}}
+            };
+        }
+
+        auto group = m_dbManager->createGroup(
+            json::value_to<std::string>(params.at("name")),
+            m_currentUser.id,
+            std::nullopt,
+            5,
+            std::nullopt,
+            std::nullopt
+        );
+
+        if (!group.has_value()) {
+            return {{"responseTo", "createGroup"}, {"status", "error"}, {"message", "Failed to create group"}};
+        }
+
+        m_vpn->createGroup(
+            json::value_to<std::string>(params.at("name")),
+            *m_currentUser.vpn_ip
+        );
+
+        return {
+            {"responseTo", "createGroup"},
+            {"status", "success"}
+        };
+
+    } catch (const std::exception& e) {
+        std::cerr << "[SESSION] Failed to process create group request: " << e.what() << std::endl;
+        return {{"responseTo", "createGroup"}, {"status", "error"}, {"message", "Failed to process create group request: " + std::string(e.what())}};
+    }
+}
+
+
 void TlsSession::queue_write(json::value message) {
     // Серіалізуємо JSON у рядок
     std::string message_str = json::serialize(message);
