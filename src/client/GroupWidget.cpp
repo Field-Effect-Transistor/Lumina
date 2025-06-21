@@ -15,6 +15,9 @@ GroupWidget::GroupWidget(
     m_groupBox = new QGroupBox(name, this);
     m_layout = new QVBoxLayout(m_groupBox);
 
+    setLayout(new QVBoxLayout(this));
+    layout()->addWidget(m_groupBox);
+
     for (const auto& member_val : members) { 
         m_members.push_back(new GroupMemberWidget(
             member_val.toObject()["id"].toInt(),

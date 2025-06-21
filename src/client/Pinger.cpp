@@ -56,7 +56,7 @@ void Pinger::executePing() {
     command = "ping";
     // -c 1: один запит
     // -W 3: таймаут 3 секунди
-    arguments << "-c" << "1" << "-W" << "3" << m_ip;
+    arguments << "-c" << "1" << "-W" << "1" << m_ip;
 #elif defined(Q_OS_MACOS)
     command = "ping";
     // -c 1: один запит

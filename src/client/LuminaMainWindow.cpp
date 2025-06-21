@@ -33,11 +33,14 @@ LuminaMainWindow::LuminaMainWindow(
 
     m_central_layout = new QVBoxLayout(m_centralWidget);
     
-    m_connectButton = new QPushButton("Connect", this);
     m_scrollArea = new QScrollArea(this);
-    m_logoutButton = new QPushButton("Logout", this);
     m_scrollAreaContent = new QWidget(m_scrollArea);
+    m_scrollAreaContent->setLayout(new QVBoxLayout(m_scrollAreaContent));
     m_scrollArea->setWidget(m_scrollAreaContent);
+    m_scrollArea->setWidgetResizable(true);
+
+    m_connectButton = new QPushButton("Connect", this);
+    m_logoutButton = new QPushButton("Logout", this);
 
     m_central_layout->addWidget(m_connectButton);
     m_central_layout->addWidget(m_scrollArea);
@@ -106,22 +109,28 @@ void LuminaMainWindow::closeEvent(QCloseEvent *event) {
 
 void LuminaMainWindow::updateGroups(const QJsonArray& groups) {
     //  clear groups
-    for (GroupWidget* group : m_groups) {
-        m_central_layout->removeWidget(group);
-        delete group;
+    QVBoxLayout* scrollLayout = qobject_cast<QVBoxLayout*>(m_scrollAreaContent->layout());
+    QLayoutItem *item;
+    while ((item = scrollLayout->takeAt(0)) != nullptr) {
+        if (QWidget *widget = item->widget()) {
+            widget->setParent(nullptr); // Важливо перед delete
+            delete widget;
+        }
+        delete item; // Видаляємо сам QLayoutItem
     }
-    m_groups.clear();
-
+    m_groups.clear(); // Очищуємо наш список віджетів
     //  add groups
-    for (const auto& group_val : groups) {
+    for (const QJsonValue& group_val : groups) {
         m_groups.push_back(new GroupWidget(
             group_val.toObject()["id"].toInt(),
             group_val.toObject()["name"].toString(),
             group_val.toObject()["members"].toArray(),
             this
         ));
-        m_central_layout->addWidget(m_groups.back());
+        scrollLayout->addWidget(m_groups.back());
     }
+
+    scrollLayout->addStretch(1);
 }
 
 void LuminaMainWindow::onMessageReceived(const QJsonObject& message) {

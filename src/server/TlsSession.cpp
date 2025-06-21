@@ -572,6 +572,208 @@ json::value TlsSession::processCreateGroupRequest(const json::object& params) {
     }
 }
 
+json::value TlsSession::processDeleteGroupRequest(const json::object& params) {
+    try {
+        if (
+            !params.contains("accessToken") || !params.at("accessToken").is_string() ||
+            !params.contains("name") || !params.at("name").is_string()
+        ) {
+            return {{"responseTo", "deleteGroup"}, {"status", "error"}, {"message", "Missing or invalid 'accessToken' or 'name' field"}};    
+        }
+
+        std::string accessToken = json::value_to<std::string>(params.at("accessToken"));
+        auto payload = CryptoUtils::validateAccessTokenBase64(
+            accessToken,
+            m_server_ptr->m_key    
+        );
+
+        if (!payload.has_value()) {
+            return {{"responseTo", "deleteGroup"}, {"status", "error"}, {"message", "Invalid access token"}};
+        }
+
+        if (
+            payload->at("exp").as_int64() < getCurrentTimestamp() &&
+            payload->at("user_id").as_int64() != m_currentUser.id
+        ) {
+            return {
+                {"responseTo", "any"},
+                {"status", "updateAccessToken"},
+                {"request", {"command", "deleteGroup"},
+                    {"name", params.at("name")}}
+            };
+        }
+
+        auto group = m_dbManager->getGroupByName(
+            json::value_to<std::string>(params.at("name"))
+        );
+
+        if (!group.has_value()) {
+            return {{"responseTo", "deleteGroup"}, {"status", "error"}, {"message", "Group not found"}};
+        }
+
+        if (group->owner_user_id != m_currentUser.id) {
+            return {{"responseTo", "deleteGroup"}, {"status", "error"}, {"message", "You are not the owner of this group"}};
+        }
+
+        if (!m_dbManager->deleteGroup(
+            group->id
+        )) {
+            return {{"responseTo", "deleteGroup"}, {"status", "error"}, {"message", "Failed to delete group"}};
+        }
+
+        m_vpn->destroyGroup(
+            group->name
+        );
+
+        return {
+            {"responseTo", "deleteGroup"},
+            {"status", "success"}
+        };
+
+    } catch (const std::exception& e) {
+        std::cerr << "[SESSION] Failed to process delete group request: " << e.what() << std::endl;
+        return {{"responseTo", "deleteGroup"}, {"status", "error"}, {"message", "Failed to process delete group request: " + std::string(e.what())}};
+    }
+}
+
+json::value TlsSession::processJoinGroupRequest(const json::object& params) {
+    try {
+        if (
+            !params.contains("accessToken") || !params.at("accessToken").is_string() ||
+            !params.contains("name") || !params.at("name").is_string()
+        ) {
+            return {{"responseTo", "joinGroup"}, {"status", "error"}, {"message", "Missing or invalid 'accessToken' or 'name' field"}};    
+        }
+
+        std::string accessToken = json::value_to<std::string>(params.at("accessToken"));
+        auto payload = CryptoUtils::validateAccessTokenBase64(
+            accessToken,
+            m_server_ptr->m_key    
+        );
+
+        if (!payload.has_value()) {
+            return {{"responseTo", "joinGroup"}, {"status", "error"}, {"message", "Invalid access token"}};
+        }
+
+        if (
+            payload->at("exp").as_int64() < getCurrentTimestamp() &&
+            payload->at("user_id").as_int64() != m_currentUser.id
+        ) {
+            return {
+                {"responseTo", "any"},
+                {"status", "updateAccessToken"},
+                {"request", {"command", "joinGroup"},
+                    {"name", params.at("name")}}
+            };
+        }
+
+        auto group = m_dbManager->getGroupByName(
+            json::value_to<std::string>(params.at("name"))
+        );
+
+        if (!group.has_value()) {
+            return {{"responseTo", "joinGroup"}, {"status", "error"}, {"message", "Group not found"}};
+        }
+
+        if (m_dbManager->isUserInGroup(
+            m_currentUser.id,
+            group->id
+        )) {
+            return {{"responseTo", "joinGroup"}, {"status", "error"}, {"message", "You are already in this group"}};
+        }
+
+        if (!m_dbManager->addUserToGroup(
+            m_currentUser.id,
+            group->id
+        )) {
+            return {{"responseTo", "joinGroup"}, {"status", "error"}, {"message", "Failed to add user to group"}};
+        }
+
+        m_vpn->addUserToGroup(
+            group->name,
+            *m_currentUser.vpn_ip
+        );
+
+        return {
+            {"responseTo", "joinGroup"},
+            {"status", "success"},
+            {"message", "You have joined the group"}
+        };
+    } catch (const std::exception& e) {
+        std::cerr << "[SESSION] Failed to process join group request: " << e.what() << std::endl;
+        return {{"responseTo", "joinGroup"}, {"status", "error"}, {"message", "Failed to process join group request: " + std::string(e.what())}};
+    }
+}
+
+json::value TlsSession::processLeaveGroupRequest(const json::object& params) {
+    try {
+        if (
+            !params.contains("accessToken") || !params.at("accessToken").is_string() ||
+            !params.contains("name") || !params.at("name").is_string()
+        ) {
+            return {{"responseTo", "leaveGroup"}, {"status", "error"}, {"message", "Missing or invalid 'accessToken' or 'name' field"}};    
+        }
+
+        std::string accessToken = json::value_to<std::string>(params.at("accessToken"));
+        auto payload = CryptoUtils::validateAccessTokenBase64(
+            accessToken,
+            m_server_ptr->m_key    
+        );
+
+        if (!payload.has_value()) {
+            return {{"responseTo", "leaveGroup"}, {"status", "error"}, {"message", "Invalid access token"}};
+        }
+
+        if (
+            payload->at("exp").as_int64() < getCurrentTimestamp() &&
+            payload->at("user_id").as_int64() != m_currentUser.id
+        ) {
+            return {
+                {"responseTo", "any"},
+                {"status", "updateAccessToken"},
+                {"request", {"command", "leaveGroup"},
+                    {"name", params.at("name")}}
+            };
+        }
+
+        auto group = m_dbManager->getGroupByName(
+            json::value_to<std::string>(params.at("name"))
+        );
+
+        if (!group.has_value()) {
+            return {{"responseTo", "leaveGroup"}, {"status", "error"}, {"message", "Group not found"}};
+        }
+
+        if (!m_dbManager->isUserInGroup(
+            m_currentUser.id,
+            group->id
+        )) {
+            return {{"responseTo", "leaveGroup"}, {"status", "error"}, {"message", "You are not in this group"}};
+        }
+
+        if (!m_dbManager->removeUserFromGroup(
+            m_currentUser.id,
+            group->id
+        )) {
+            return {{"responseTo", "leaveGroup"}, {"status", "error"}, {"message", "Failed to remove user from group"}};
+        }
+
+        m_vpn->removeUserFromGroup(
+            group->name,
+            *m_currentUser.vpn_ip
+        );
+
+        return {
+            {"responseTo", "leaveGroup"},
+            {"status", "success"},
+            {"message", "You have left the group"}
+        };
+
+    } catch (const std::exception& e) {
+        std::cerr << "[SESSION] Failed to process leave group request: " << e.what() << std::endl;
+        return {{"responseTo", "leaveGroup"}, {"status", "error"}, {"message", "Failed to process leave group request: " + std::string(e.what())}};
+    }
+}
 
 void TlsSession::queue_write(json::value message) {
     // Серіалізуємо JSON у рядок

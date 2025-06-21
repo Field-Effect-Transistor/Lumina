@@ -22,7 +22,7 @@ GroupMemberWidget::GroupMemberWidget(
     
     m_pinger = new Pinger(ip, 5, this);
     connect(m_pinger, &Pinger::pinged, this, &GroupMemberWidget::onPinged);
-
+    m_pinger->start();
     setLayout(layout);
 }
 
@@ -32,4 +32,8 @@ void GroupMemberWidget::onPinged(int pingResult) {
     } else {
         m_memberStatus->setText("Offline");
     }
+}
+
+GroupMemberWidget::~GroupMemberWidget() {
+    m_pinger->stop();
 }

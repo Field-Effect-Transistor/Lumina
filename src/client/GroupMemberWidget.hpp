@@ -17,6 +17,7 @@ public:
         const QString& name,
         QWidget *parent = nullptr
     );
+    ~GroupMemberWidget();
 
 private:
     QLabel* m_memberName;
