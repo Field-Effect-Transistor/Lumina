@@ -1046,7 +1046,31 @@ std::optional<int> DatabaseManager::createGroup(
     // Важливо: після створення групи, власник має бути автоматично доданий до неї
     // Це можна зробити тут же, або на рівні сервісної логіки, яка викликає createGroup
     if (new_group_id != -1) {
-        if (!addUserToGroup(new_group_id, owner_user_id /*, "OWNER_OR_ADMIN_ROLE" */)) {
+        const char* sql = "INSERT INTO GroupMembers (group_id, user_id) VALUES (?, ?);";
+        sqlite3_stmt* stmt = nullptr;
+
+        rc = sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr);
+        if (rc != SQLITE_OK) {
+            std::cerr << "[ERROR] Failed to prepare statement (addUserToGroup): " << sqlite3_errmsg(db_) << std::endl;
+            finalize_statement(stmt, "addUserToGroup_prepare", db_);
+            return false;
+        }
+
+        sqlite3_bind_int(stmt, 1, new_group_id);
+        sqlite3_bind_int(stmt, 2, owner_user_id);
+        // if (role field exists) sqlite3_bind_text(stmt, 3, role.c_str(), -1, SQLITE_STATIC);
+
+        rc = sqlite3_step(stmt);
+        if (rc != SQLITE_DONE) {
+            std::cerr << "[ERROR] Failed to execute statement (addUserToGroup): " << sqlite3_errmsg(db_) << std::endl;
+            // Можлива помилка SQLITE_CONSTRAINT, якщо користувач вже в групі (через PK)
+            finalize_statement(stmt, "addUserToGroup_step", db_);
+            return false;
+        }
+
+        finalize_statement(stmt, "addUserToGroup", db_);
+        bool state = true;
+        if (!state) {
             std::cerr << "[WARNING] Failed to add owner as member to newly created group " << new_group_id << std::endl;
             // Тут можна вирішити, чи є це критичною помилкою, що має скасувати створення групи
             // (наприклад, видалити групу або повернути std::nullopt)

@@ -335,7 +335,7 @@ void LuminaMainWindow::createGroup(){
     request["command"] = "createGroup";
     QJsonObject params;
     params["accessToken"] = accessToken;
-    params["groupName"] = groupName;
+    params["name"] = groupName;
     request["params"] = params;
     emit sendMessage(request);
 };
@@ -362,7 +362,7 @@ void LuminaMainWindow::deleteGroup(){
     request["command"] = "deleteGroup";
     QJsonObject params;
     params["accessToken"] = accessToken;
-    params["groupName"] = groupName;
+    params["name"] = groupName;
     request["params"] = params;
     emit sendMessage(request);
 };
@@ -389,7 +389,7 @@ void LuminaMainWindow::joinGroup(){
     request["command"] = "joinGroup";
     QJsonObject params;
     params["accessToken"] = accessToken;
-    params["groupName"] = groupName;
+    params["name"] = groupName;
     request["params"] = params;
     emit sendMessage(request);
 };
@@ -416,7 +416,7 @@ void LuminaMainWindow::leaveGroup(){
     request["command"] = "leaveGroup";
     QJsonObject params;
     params["accessToken"] = accessToken;
-    params["groupName"] = groupName;
+    params["name"] = groupName;
     request["params"] = params;
     emit sendMessage(request);
 };
