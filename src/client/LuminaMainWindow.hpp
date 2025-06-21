@@ -11,6 +11,7 @@
 #include <QJsonArray>
 #include <QProcess>
 #include <QTimer>
+#include <QAction>
 
 #include "MessageDispatcher.hpp"
 
@@ -32,6 +33,19 @@ private:
     std::vector<GroupWidget*> m_groups;
 
     QPushButton* m_logoutButton;
+
+    //  Actions
+    QAction* m_updateGroupAction;
+    QAction* m_createGroupAction;
+    QAction* m_deleteGroupAction;
+    QAction* m_joinGroupAction;
+    QAction* m_leaveGroupAction;
+
+    //QAction* m_settingsAction;
+    QAction* m_aboutAction;
+    QAction* m_aboutQtAction;
+    QAction* m_exitAction;
+
 
     QProcess* m_process;
     QTimer* m_vpnStatusTimer;
@@ -55,8 +69,18 @@ private slots:
     void checkVpnIpAddress();
 
     void onConnectButtonClicked();
+
+    void askGroups();
+    void createGroup();
+    void deleteGroup();
+    void joinGroup();
+    void leaveGroup();
     
 protected:
     void closeEvent(QCloseEvent *event) override;
+
+private:
+    void createActions();
+    void createMenuBar();
 
 };

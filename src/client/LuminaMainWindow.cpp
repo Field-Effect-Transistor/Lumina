@@ -10,6 +10,7 @@
 #include <QApplication>
 #include <QSettings>
 #include <QMessageBox>
+#include <QMenuBar>
 
 #include <QNetworkInterface>
 #include <QHostAddress>
@@ -48,6 +49,9 @@ LuminaMainWindow::LuminaMainWindow(
     setMinimumHeight(300);
     setFixedWidth(330);   
 
+    createActions();
+    createMenuBar();
+
     m_process = new QProcess(this);
     m_process->setProcessChannelMode(QProcess::MergedChannels);
 
@@ -78,17 +82,7 @@ LuminaMainWindow::LuminaMainWindow(
 }
 
 void LuminaMainWindow::onLoginSuccess() {
-    //  get groups
-    QSettings settings;
-    QString accessToken =  settings.value("accessToken").toString();
-
-    QJsonObject request;
-    request["command"] = "getGroups";
-    QJsonObject params;
-    params["accessToken"] = accessToken;
-    request["params"] = params;
-    emit sendMessage(request);
-
+    askGroups();
     show();
 }
 
@@ -257,3 +251,61 @@ void LuminaMainWindow::checkVpnIpAddress() {
         m_vpnStatusTimer->stop();
     }
 }
+
+void LuminaMainWindow::createActions() {
+    m_updateGroupAction = new QAction(tr("Update"), this);
+    connect(m_updateGroupAction, &QAction::triggered, this, &LuminaMainWindow::askGroups);
+    m_createGroupAction = new QAction(tr("Create"), this);
+    connect(m_createGroupAction, &QAction::triggered, this, &LuminaMainWindow::createGroup);
+    m_deleteGroupAction = new QAction(tr("Delete"), this);
+    connect(m_deleteGroupAction, &QAction::triggered, this, &LuminaMainWindow::deleteGroup);
+    m_joinGroupAction = new QAction(tr("Join"), this);
+    connect(m_joinGroupAction, &QAction::triggered, this, &LuminaMainWindow::joinGroup);
+    m_leaveGroupAction = new QAction(tr("Leave"), this);
+    connect(m_leaveGroupAction, &QAction::triggered, this, &LuminaMainWindow::leaveGroup);
+
+    m_aboutAction = new QAction(tr("About"), this);
+    m_aboutQtAction = new QAction(tr("About Qt"), this);
+    connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
+    m_exitAction = new QAction(tr("Exit"), this);
+    m_exitAction->setShortcut(QKeySequence::Quit);
+    connect(m_exitAction, &QAction::triggered, qApp, [this]() {
+        onVpnDisconnect();
+        hide();
+        QApplication::quit();
+    });
+}
+
+void LuminaMainWindow::createMenuBar() {
+    QMenuBar* menuBar = this->menuBar();
+
+    QMenu* groupMenu = menuBar->addMenu(tr("Group"));
+    groupMenu->addAction(m_updateGroupAction);
+    groupMenu->addAction(m_createGroupAction);
+    groupMenu->addAction(m_deleteGroupAction);
+    groupMenu->addAction(m_joinGroupAction);
+    groupMenu->addAction(m_leaveGroupAction);
+
+    QMenu* helpMenu = menuBar->addMenu(tr("Help"));
+    helpMenu->addAction(m_aboutAction);
+    helpMenu->addAction(m_aboutQtAction);
+    helpMenu->addAction(m_exitAction);
+}
+
+void LuminaMainWindow::askGroups(){
+    //  get groups
+    QSettings settings;
+    QString accessToken =  settings.value("accessToken").toString();
+
+    QJsonObject request;
+    request["command"] = "getGroups";
+    QJsonObject params;
+    params["accessToken"] = accessToken;
+    request["params"] = params;
+    emit sendMessage(request);    
+};
+
+void LuminaMainWindow::createGroup(){};
+void LuminaMainWindow::deleteGroup(){};
+void LuminaMainWindow::joinGroup(){};
+void LuminaMainWindow::leaveGroup(){};
