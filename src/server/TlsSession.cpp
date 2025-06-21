@@ -202,6 +202,8 @@ json::value TlsSession::handle_request(const json::value& request) {
         return processGetGroupsRequest(params);
     } else if (command == "ovpn") {
         return processOvpnRequest(params);
+    } else if (command == "createGroup") {
+        return processCreateGroupRequest(params);
     }
     return {{"status", "error"}, {"message", "Unknown command: " + command}};
 }
