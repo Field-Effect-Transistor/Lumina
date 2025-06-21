@@ -4,6 +4,7 @@
 #   Author: Field Effect Transistor
 #   Desc:   manage groups
 #   Creation Date: 06/08/25
+#   Modified Date: 06/22/25
 #
 
 set -e
@@ -105,9 +106,21 @@ case "$1" in
         checkRoot
         checkDependecies
 
-        ipset flush
+        echo "[INFO] Destroying existing ipsets before restore..."
+        if ipset list -n -q &>/dev/null; then
+            ipset list -n -q | while read -r set_name; do
+                echo "[INFO] Destroying ipset: $set_name"
+                ipset destroy "$set_name"
+            done
+        else
+            echo "[INFO] No existing ipsets to destroy."
+        fi
+
+        echo "[INFO] Restoring ipsets from $GROUPS_FILE"
         ipset restore < "$GROUPS_FILE"
+        echo "[INFO] Restoring iptables rules from $IPTABLES_FILE"
         iptables-restore < "$IPTABLES_FILE"
+        echo "[INFO] Restore complete."
     ;;
 
     *)
