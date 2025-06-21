@@ -28,7 +28,8 @@ void MessageDispatcher::onConnected() {
         QJsonObject params;
         params["refreshToken"] = refreshToken.toString();
         request["params"] = params;
-        m_tlsClient->sendMessage(request);
+        //m_tlsClient->sendMessage(request);
+        onMessageSended(request);
     }
 }
 
@@ -74,6 +75,14 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
         }
     }
 
+    if (responseTo == "ovpn") {
+        if (status == "success") {
+            emit mainMessageReceived(message);
+        } else {
+            qDebug() << "[Dispatcher] Failed to get ovpn" << message["message"].toString();
+        }
+    }
+
     if (responseTo == "any") {
         if (status == "updateAccessToken") {
             m_lastRequest = message["request"].toObject();
@@ -85,13 +94,15 @@ void MessageDispatcher::onMessageReceived(const QJsonObject& message) {
             QJsonObject params;
             params["refreshToken"] = refreshToken;
             request["params"] = params;
-            m_tlsClient->sendMessage(request);
+            //m_tlsClient->sendMessage(request);
+            onMessageSended(request);
         }
     }
 
     if (m_lastRequest.has_value()) {
         m_lastRequest.value()["accessToken"] = message["accessToken"].toString();
-        m_tlsClient->sendMessage(m_lastRequest.value());
+        //m_tlsClient->sendMessage(m_lastRequest.value());
+        onMessageSended(m_lastRequest.value());
         m_lastRequest = std::nullopt;
     }
 }

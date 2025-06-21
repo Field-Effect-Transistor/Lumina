@@ -9,11 +9,11 @@
 #include <QVBoxLayout>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QProcess>
 
 #include "MessageDispatcher.hpp"
 
 class GroupWidget;
-class CommandRunner;
 
 class LuminaMainWindow : public QMainWindow {
     Q_OBJECT
@@ -32,14 +32,12 @@ private:
 
     QPushButton* m_logoutButton;
 
+    QProcess* m_process;
     MessageDispatcher *m_dispatcher;
-
-    CommandRunner* m_commandRunner;
-
 
 signals:
     void sendMessage(const QJsonObject& message);
-    void disconnect();
+    void disconnectVpn();
 
 private slots:
     void onLoginSuccess();
@@ -48,8 +46,11 @@ private slots:
     void updateGroups(const QJsonArray& groups);
     void onDisconnected();
 
-    void onConnectButtonClicked();
+    void onVpnConnected();
+    void onVpnDisconnect();
 
+    void onConnectButtonClicked();
+    
 protected:
     void closeEvent(QCloseEvent *event) override;
 

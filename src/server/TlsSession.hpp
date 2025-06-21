@@ -37,7 +37,8 @@ public:
     void start();
     ssl::stream<tcp::socket>& get_socket() { return m_ssl_stream; }
 
-    const int refreshTokenLifetime = 3 * 60;
+    const int refreshTokenLifetime = 7 * 24 * 60 * 60;
+    const int authTokenLifetime = 24 * 60 * 60;
 
 private:
 

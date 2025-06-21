@@ -3,13 +3,13 @@
 #include "LuminaMainWindow.hpp"
 
 #include "GroupWidget.hpp"
-#include "CommandRunner.hpp"
 
 #include <QStatusBar>
 #include <QWidget>
 #include <QSettings>
 #include <QApplication>
 #include <QSettings>
+#include <QMessageBox>
 
 #include <fstream>
 
@@ -45,7 +45,22 @@ LuminaMainWindow::LuminaMainWindow(
     setMinimumHeight(300);
     setFixedWidth(330);   
 
-    m_commandRunner = new CommandRunner(this);
+    m_process = new QProcess(this);
+    m_process->setProcessChannelMode(QProcess::MergedChannels);
+
+    connect(m_process, &QProcess::started, this, &LuminaMainWindow::onVpnConnected);
+    connect(m_process, &QProcess::finished, this, [this](int, QProcess::ExitStatus){ onVpnDisconnect(); });
+    connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError){ 
+        onVpnDisconnect(); 
+        QMessageBox::critical(this, "Error", "VPN connection error");
+    });
+    connect(m_process, &QProcess::readyRead, this, [this]() {
+        while(m_process->canReadLine()) {
+            QByteArray lineBytes = m_process->readLine();
+            QString line = QString::fromLocal8Bit(lineBytes).trimmed();
+            qDebug() << line;
+        }
+    });
 
     connect(m_dispatcher, &MessageDispatcher::loginSuccess, this, &LuminaMainWindow::onLoginSuccess);
     //connect(m_dispatcher, &MessageDispatcher::startMainWindow, this, &LuminaMainWindow::onLoginSuccess);
@@ -53,7 +68,7 @@ LuminaMainWindow::LuminaMainWindow(
     connect(m_logoutButton, &QPushButton::clicked, this, &LuminaMainWindow::onLogoutButtonClicked);
     connect(m_dispatcher, &MessageDispatcher::mainMessageReceived, this, &LuminaMainWindow::onMessageReceived);
     connect(m_dispatcher, &MessageDispatcher::disconnected, this, &LuminaMainWindow::onDisconnected);
-    connect(this, &LuminaMainWindow::disconnect, m_commandRunner, &CommandRunner::stopCommand);
+    connect(m_connectButton, &QPushButton::clicked, this, &LuminaMainWindow::onConnectButtonClicked);
 }
 
 void LuminaMainWindow::onLoginSuccess() {
@@ -108,11 +123,23 @@ void LuminaMainWindow::onMessageReceived(const QJsonObject& message) {
     if (message["responseTo"].toString() == "getGroups") {
         updateGroups(message["groups"].toArray());
     } else if (message["responseTo"].toString() == "ovpn") {
-        m_connectButton->setText("Disconnect");
-        std::ofstream file("/tmp/lumina.ovpn");
-        file << message["ovpn"].toString().toStdString();
-        file.close();
-        m_commandRunner->startCommand("openvpn", QStringList() << "--config" << "/tmp/lumina.ovpn");
+        if (message["status"].toString() == "error") {
+            QMessageBox::warning(this, "Error", message["message"].toString()); 
+        } else {
+            std::ofstream file("/tmp/lumina.ovpn");
+            file << message["ovpn"].toString().toStdString();
+            file.close();
+
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert("SUDO_ASKPASS", "/usr/bin/ksshaskpass");
+            m_process->setProcessEnvironment(env);
+
+            QString program = "sudo";
+            QStringList arguments;
+            arguments << "-A" << "openvpn" << "/tmp/lumina.ovpn";
+            
+            m_process->start(program, arguments);
+        }
     }
 }
 
@@ -132,7 +159,17 @@ void LuminaMainWindow::onConnectButtonClicked() {
         request["params"] = params;
         emit sendMessage(request);
     } else {
-        emit disconnect();
-        m_connectButton->setText("Connect");
+        onVpnDisconnect();
     }
+}
+
+void LuminaMainWindow::onVpnDisconnect() {
+    m_connectButton->setText("Connect");
+    if (m_process->state() == QProcess::Running) {
+        m_process->kill();
+    }
+}
+
+void LuminaMainWindow::onVpnConnected() {
+    m_connectButton->setText("Disconnect");
 }
