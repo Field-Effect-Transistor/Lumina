@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QProcess>
+#include <QTimer>
 
 #include "MessageDispatcher.hpp"
 
@@ -33,6 +34,9 @@ private:
     QPushButton* m_logoutButton;
 
     QProcess* m_process;
+    QTimer* m_vpnStatusTimer;
+    int m_ipCheckAttempts = 0;
+
     MessageDispatcher *m_dispatcher;
 
 signals:
@@ -48,6 +52,7 @@ private slots:
 
     void onVpnConnected();
     void onVpnDisconnect();
+    void checkVpnIpAddress();
 
     void onConnectButtonClicked();
     
