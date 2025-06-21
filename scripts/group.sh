@@ -106,21 +106,64 @@ case "$1" in
         checkRoot
         checkDependecies
 
-        echo "[INFO] Destroying existing ipsets before restore..."
+        echo "[INFO] --- Starting Restore Process ---"
+
+        # 1. Очистити iptables, щоб видалити посилання на ipsets
+        echo "[INFO] Stage 1: Clearing all iptables rules and setting default policies..."
+        iptables -P INPUT ACCEPT
+        iptables -P FORWARD ACCEPT # Встановіть потрібну вам політику за замовчуванням
+        iptables -P OUTPUT ACCEPT
+        iptables -F # Flush (видалити) всі правила з усіх ланцюжків
+        iptables -X # Видалити всі користувацькі (не за замовчуванням) ланцюжки
+        iptables -Z # Обнулити лічильники пакетів та байтів у всіх ланцюжках
+        echo "[INFO] iptables cleared."
+
+        # 2. Знищити існуючі ipsets
+        echo "[INFO] Stage 2: Destroying existing ipsets..."
         if ipset list -n -q &>/dev/null; then
             ipset list -n -q | while read -r set_name; do
                 echo "[INFO] Destroying ipset: $set_name"
-                ipset destroy "$set_name"
+                if ! ipset destroy "$set_name" 2>/dev/null; then
+                    # Якщо після повного очищення iptables набір все ще використовується,
+                    # це дивно і може вказувати на іншу проблему або компонент ядра.
+                    echo "[ERROR] Could not destroy ipset '$set_name' even after clearing iptables. It might be in use by another kernel component or locked."
+                else
+                    echo "[INFO] Successfully destroyed ipset: $set_name"
+                fi
             done
         else
             echo "[INFO] No existing ipsets to destroy."
         fi
+        echo "[INFO] ipsets destruction phase complete."
 
-        echo "[INFO] Restoring ipsets from $GROUPS_FILE"
-        ipset restore < "$GROUPS_FILE"
-        echo "[INFO] Restoring iptables rules from $IPTABLES_FILE"
-        iptables-restore < "$IPTABLES_FILE"
-        echo "[INFO] Restore complete."
+        # 3. Відновити ipsets з файлу
+        echo "[INFO] Stage 3: Restoring ipsets from $GROUPS_FILE..."
+        if [ -f "$GROUPS_FILE" ]; then
+            if ipset restore < "$GROUPS_FILE"; then
+                echo "[INFO] ipsets successfully restored from $GROUPS_FILE."
+            else
+                echo "[ERROR] Failed to restore ipsets from $GROUPS_FILE. Check the file for errors."
+                # Можна додати вихід з помилкою тут, якщо відновлення ipset є критичним
+                # exit 1
+            fi
+        else
+            echo "[WARNING] ipset groups file ($GROUPS_FILE) not found. Skipping ipset restore."
+        fi
+
+        # 4. Відновити iptables з файлу (тепер вони можуть посилатися на новостворені ipsets)
+        echo "[INFO] Stage 4: Restoring iptables rules from $IPTABLES_FILE..."
+        if [ -f "$IPTABLES_FILE" ]; then
+            if iptables-restore < "$IPTABLES_FILE"; then
+                echo "[INFO] iptables rules successfully restored from $IPTABLES_FILE."
+            else
+                echo "[ERROR] Failed to restore iptables rules from $IPTABLES_FILE. Check the file for errors."
+                # exit 1
+            fi
+        else
+            echo "[WARNING] iptables rules file ($IPTABLES_FILE) not found. Skipping iptables restore."
+        fi
+
+        echo "[INFO] --- Restore Process Complete ---"
     ;;
 
     *)
