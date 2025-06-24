@@ -15,6 +15,7 @@ add_executable( lumina_client
     Pinger.cpp
     GroupWidget.cpp
     GroupMemberWidget.cpp
+    AboutDialog.cpp
 #   resources
     resources/resources.qrc
 )

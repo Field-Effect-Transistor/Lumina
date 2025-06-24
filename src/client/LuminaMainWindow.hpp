@@ -75,7 +75,9 @@ private slots:
     void deleteGroup();
     void joinGroup();
     void leaveGroup();
-    
+
+    void showAbout();
+
 protected:
     void closeEvent(QCloseEvent *event) override;
 

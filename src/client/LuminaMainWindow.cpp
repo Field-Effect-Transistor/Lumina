@@ -3,6 +3,7 @@
 #include "LuminaMainWindow.hpp"
 
 #include "GroupWidget.hpp"
+#include "AboutDialog.hpp"
 
 #include <QStatusBar>
 #include <QWidget>
@@ -287,6 +288,7 @@ void LuminaMainWindow::createActions() {
     connect(m_leaveGroupAction, &QAction::triggered, this, &LuminaMainWindow::leaveGroup);
 
     m_aboutAction = new QAction(tr("About"), this);
+    connect(m_aboutAction, &QAction::triggered, this, &LuminaMainWindow::showAbout);
     m_aboutQtAction = new QAction(tr("About Qt"), this);
     connect(m_aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
     m_exitAction = new QAction(tr("Exit"), this);
@@ -434,3 +436,8 @@ void LuminaMainWindow::leaveGroup(){
     request["params"] = params;
     emit sendMessage(request);
 };
+
+void LuminaMainWindow::showAbout() {
+    AboutDialog aboutDialog(this);
+    aboutDialog.exec();    
+}
