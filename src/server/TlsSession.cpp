@@ -689,8 +689,8 @@ json::value TlsSession::processJoinGroupRequest(const json::object& params) {
         }
 
         if (!m_dbManager->addUserToGroup(
-            m_currentUser.id,
-            group->id
+            group->id,
+            m_currentUser.id
         )) {
             return {{"responseTo", "joinGroup"}, {"status", "error"}, {"message", "Failed to add user to group"}};
         }
@@ -748,6 +748,10 @@ json::value TlsSession::processLeaveGroupRequest(const json::object& params) {
 
         if (!group.has_value()) {
             return {{"responseTo", "leaveGroup"}, {"status", "error"}, {"message", "Group not found"}};
+        }
+
+        if (m_currentUser.id == group->owner_user_id) {
+            return {{"responseTo", "leaveGroup"}, {"status", "error"}, {"message", "You cannot leave your own group, try Delete"}};
         }
 
         if (!m_dbManager->isUserInGroup(
