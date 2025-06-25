@@ -1,0 +1,82 @@
+@startuml database
+
+' Сховати тінь та встановити стиль
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam table {
+    borderColor #333
+    backgroundColor #EEE
+    borderThickness 2
+}
+skinparam header {
+    backgroundColor #666
+    fontColor white
+    borderColor #333
+}
+
+'Database tables
+
+entity "Users" as users {
+    * id: INTEGER (PK)
+    --
+    username: VARCHAR (UNIQUE INDEX)
+    email: VARCHAR (UNIQUE INDEX)
+    password_hash: VARCHAR
+    salt: VARCHAR
+    is_verified: INTEGER
+    is_active: INTEGER (can be banned or unactivated)
+    created_at: DATETIME
+    last_login_at: DATETIME
+    updated_at: DATETIME
+}
+
+entity "Auth Tokens" as authTokens {
+    * id: INTEGER (PK)
+    --
+    user_id: INTEGER (FK)
+    token_hash: VARCHAR (UNIQUE INDEX)
+    token_type: TEXT (PASSWORD RESET | EMAIL VALIDATION)
+    created_at: DATETIME
+    expires_at: DATETIME
+    is_used:    INTEGER
+}
+
+entity "Refresh Tokens" as refreshTokens {
+    *id: INTEGER
+    --
+    user_id: INTEGER (FK)
+    token_hash: VARCHAR (UNIQUE INDEX)
+    created_at: DATETIME
+    expires_at: DATETIME
+    is_revoked: INTEGER
+}
+
+entity "Groups" as groups {
+    *id: INTEGER (PK)
+    --
+    name: VARCHAR (UNIQUE INDEX)
+    password_hash: VARCHAR
+    salt: VARCHAR (UNIQUE)
+    owner_id: INTEGER (FK) (INDEX)
+    max_members: INTEGER
+    description: VARCHAR (may be NULL)
+    created_at: DATETIME
+    updated_at: DATETIME
+}
+
+entity "Groups members" as groupMembers {
+    *(user_id, group_id) (PK)
+    --
+    user_id: INTEGER (FK)
+    group_id: INTEGER (FK)
+}
+
+'connections
+users ||-o{ authTokens    : user_id
+users ||-o{ refreshTokens : user_id
+groups ||-o{ groupMembers  : group_id
+users ||-o{ groupMembers  : user_id
+users ||-o{ groups  : owner_id
+
+@enduml
