@@ -1,0 +1,139 @@
+@startuml use case diagram
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+
+actor "Неавторизований\nкористувач" as guest
+actor "Авторизований\nкористувач" as user
+actor "Член\nгрупи" as groupMember
+actor "Адміністратор\nгрупи" as groupAdmin
+actor "Власник\nгрупи" as groupOwner
+actor "Системний\nадмін" as sysAdmin
+
+' Розбиваємо прецеденти на логічні пакети для кращої читабельності
+package "1. Керування Акаунтом" {
+    usecase "Зареєструватись" as UC_Register
+    usecase "Підтвердити пошту" as UC_VerifyEmail
+    usecase "Авторизуватись" as UC_Login
+    usecase "Розлогінитись" as UC_Logout
+    usecase "Відновити пароль" as UC_ResetPassword
+    usecase "Змінити пароль" as UC_ChangePassword
+    usecase "Змінити email" as UC_ChangeEmail
+    usecase "Змінити ім'я" as UC_ChangeName
+    usecase "Переглянути активні сесії" as UC_ListSessions
+    usecase "Примусово відкликати сесію" as UC_RevokeSession
+    usecase "Примусово відкликати всі сесії" as UC_RevokeAllSessions
+}
+
+package "2. Керування Групами" {
+    usecase "Створити групу" as UC_CreateGroup
+    usecase "Приєднатись до групи" as UC_JoinGroup
+    usecase "Покинути групу" as UC_LeaveGroup
+    usecase "Переглянути список груп" as UC_ListGroups
+    usecase "Призначити роль учаснику" as UC_SetRole
+    usecase "Переглянути логи" as UC_ViewLogs
+    usecase "Перевірити статус учасників групи" as UC_CheckStatus
+    usecase "Запросити учасника" as UC_Invite
+    usecase "Видалити групу" as UC_DeleteGroup
+}
+
+package "3. Керування VPN" {
+    usecase "Під'єднатись до VPN" as UC_VpnConnect
+    usecase "Від'єднатись від VPN" as UC_VpnDisconnect    
+}
+
+package "4. Віддалений доступ" {
+    usecase "Сесія віддаленого доступу" as UC_RemoteSession
+    usecase "SSH сесія" as UC_SSH_Session
+}
+
+package "5. Адміністрування" {
+    usecase "Переглянути загальні логи" as UC_ViewAllLogs
+    usecase "Переглянути список усіх груп" as UC_ViewAllGroups
+    usecase "Переглянути список усіх користувачів" as UC_ViewAllUsers
+    usecase "Переглянути список усіх груп користувача" as UC_ViewAllUserGroups
+    usecase "Видалити заблокувати користувача" as UC_RevokeUser
+}
+
+' Зв'язки користувача з прецедентами
+guest ..> UC_Register
+guest ..> UC_VerifyEmail
+guest ..> UC_Login
+guest ..> UC_ResetPassword
+
+user ..> UC_Logout
+user ..> UC_ChangeEmail
+user ..> UC_ChangePassword
+user ..> UC_ChangeName
+user ..> UC_ListSessions
+user ..> UC_RevokeSession
+user ..> UC_RevokeAllSessions
+user ..> UC_CreateGroup
+user ..> UC_JoinGroup
+user ..> UC_VpnConnect
+user ..> UC_VpnDisconnect
+user ..> UC_ListGroups
+
+groupMember ..> UC_LeaveGroup
+groupMember ..> UC_CheckStatus
+groupMember ..> UC_RemoteSession
+groupMember ..> UC_SSH_Session
+
+groupAdmin ..> UC_Invite
+groupAdmin ..> UC_ViewLogs
+
+groupOwner ..> UC_SetRole
+groupOwner ..> UC_DeleteGroup
+
+sysAdmin ..> UC_ViewAllGroups
+sysAdmin ..> UC_ViewAllLogs
+sysAdmin ..> UC_ViewAllUserGroups
+sysAdmin ..> UC_ViewAllUsers
+sysAdmin ..> UC_RevokeUser
+
+' Успадкування прав
+sysAdmin --|> groupOwner
+groupOwner --|> groupAdmin
+groupAdmin --|> groupMember
+groupMember --|> user
+
+' Відношення між прецедентами
+
+' -- Базові залежності --
+UC_ResetPassword ..> UC_Login : <<extends>>
+UC_VpnConnect ..> UC_Login : <<includes>>
+UC_RemoteSession ..> UC_VpnConnect : <<includes>>
+UC_SSH_Session ..> UC_VpnConnect : <<includes>>
+
+' -- Керування акаунтом (вимагає авторизації) --
+UC_Logout ..> UC_Login : <<includes>>
+UC_ChangeEmail ..> UC_Login : <<includes>>
+UC_ChangePassword ..> UC_Login : <<includes>>
+UC_ChangeName ..> UC_Login : <<includes>>
+UC_ListSessions ..> UC_Login : <<includes>>
+UC_RevokeSession ..> UC_Login : <<includes>>
+UC_RevokeAllSessions ..> UC_Login : <<includes>>
+
+' -- Керування групами (вимагає авторизації) --
+UC_CreateGroup ..> UC_Login : <<includes>>
+UC_JoinGroup ..> UC_Login : <<includes>>
+UC_LeaveGroup ..> UC_Login : <<includes>>
+UC_ListGroups ..> UC_Login : <<includes>>
+UC_CheckStatus ..> UC_Login : <<includes>>
+UC_SetRole ..> UC_Login : <<includes>>
+UC_ViewLogs ..> UC_Login : <<includes>>
+UC_Invite ..> UC_Login : <<includes>>
+UC_DeleteGroup ..> UC_Login : <<includes>>
+
+' -- Керування VPN (вимагає авторизації) --
+UC_VpnDisconnect ..> UC_Login : <<includes>>
+
+' -- Адміністрування (вимагає авторизації) --
+UC_ViewAllLogs ..> UC_Login : <<includes>>
+UC_ViewAllGroups ..> UC_Login : <<includes>>
+UC_ViewAllUsers ..> UC_Login : <<includes>>
+UC_ViewAllUserGroups ..> UC_Login : <<includes>>
+UC_RevokeUser ..> UC_Login : <<includes>>
+
+@enduml

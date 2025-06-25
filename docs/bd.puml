@@ -31,12 +31,16 @@ entity "Users" as users {
     updated_at: DATETIME
 }
 
+entity "Admins" as admins {
+    *id: INTEGER (FK)
+}
+
 entity "Auth Tokens" as authTokens {
     * id: INTEGER (PK)
     --
     user_id: INTEGER (FK)
     token_hash: VARCHAR (UNIQUE INDEX)
-    token_type: TEXT (PASSWORD RESET | EMAIL VALIDATION)
+    token_type: TEXT (PASSWORD RESET | EMAIL VALIDATION | JOIN REQUEST)
     created_at: DATETIME
     expires_at: DATETIME
     is_used:    INTEGER
@@ -47,6 +51,7 @@ entity "Refresh Tokens" as refreshTokens {
     --
     user_id: INTEGER (FK)
     token_hash: VARCHAR (UNIQUE INDEX)
+    device_info: VARCHAR
     created_at: DATETIME
     expires_at: DATETIME
     is_revoked: INTEGER
@@ -70,13 +75,15 @@ entity "Groups members" as groupMembers {
     --
     user_id: INTEGER (FK)
     group_id: INTEGER (FK)
+    role: VARCHAR (OWNER | ADMIN | MEMBER)
 }
 
 'connections
-users ||-o{ authTokens    : user_id
-users ||-o{ refreshTokens : user_id
-groups ||-o{ groupMembers  : group_id
-users ||-o{ groupMembers  : user_id
-users ||-o{ groups  : owner_id
+users ||--o{ authTokens    : user_id
+users ||--o{ refreshTokens : user_id
+groups ||--o{ groupMembers  : group_id
+users ||--o{ groupMembers  : user_id
+users ||--o{ groups  : owner_id
+admins ||--|| users : user_id
 
 @enduml
