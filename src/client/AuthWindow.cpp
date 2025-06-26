@@ -289,4 +289,10 @@ void AuthWindow::onMessageReceived(const QJsonObject& message) {
             QMessageBox::warning(this, "Error", QString("Wrong username or password"));
         }
     }
+
+    if (responseTo == "register") {
+        if (status == "error") {
+            QMessageBox::warning(this, "Error", message["message"].toString());
+        }
+    }
 }
