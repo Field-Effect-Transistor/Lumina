@@ -1,0 +1,56 @@
+@startuml auth 
+
+actor "Користувач" as guest
+participant "Клієнтський додаток" as client
+participant "API-сервер" as api
+participant "Поштовий сервіс" as mail
+database "База даних" as db
+
+== Спроба відновити сесію ==
+guest -> client: користувач запускає клієнт
+client -> client: намагаєтсья знайти\nrefresh та access токени
+alt Клієнт має збережені токени
+    client -> api: tokens
+    api -> api: хешує refresh token
+    api -> db: пошук refresh token
+    db -> api: refresh_token_record
+    api -> api: перевіряє чи дійсний токен
+    alt токен дійсний
+        api -> api: перевіряє чи access token дійсний
+        alt токен недійсний
+            api -> db: пошук user-а власника refresh token
+            db -> api: user_record
+            api -> api: генерує access token
+        end
+        api -> client: 200 refresh та access токени
+        client -> guest: перехід до головного вікна
+    else токен недійсний 
+        api -> client: 409 застарілі токени
+        client -> client: видаляє збережені токени
+        client -> guest: вмикає вікно авторизації
+    end
+else Клієнт не має збережених токенів
+    client -> guest: вмикає вікно авторизації
+end
+
+== Спроба авторизації ==
+guest -> client: вводить email, password
+alt Формат email коректний
+    client -> api: POST email, password
+    api -> db: пошук user з відповідним email
+    alt User існує
+        db -> api: user_record
+        api -> api: генерує Refresh token
+        api -> api: генерує Aсcess token
+        api -> client: 200 refresh та access токени
+        client -> guest: перехід до головного вікна
+    else User не існує
+        db -> api: повертає null
+        api -> client: 409 Некоректні дані авторизації
+        client -> guest: Показати помилку
+    end
+else Формат email ніякий
+    client --> guest: Помилка: "Введіть коректний email"
+end
+
+@enduml

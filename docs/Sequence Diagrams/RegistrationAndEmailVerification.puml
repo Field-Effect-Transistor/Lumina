@@ -1,0 +1,105 @@
+@startuml "User Registration with Error Handling"
+
+actor "Неавторизований\nкористувач" as guest
+participant "Клієнт Qt" as client
+participant "API-сервер" as api
+participant "Поштовий\nсервіс" as smtp
+database "База даних" as db
+participant "VPN-сервер" as vpn
+
+title "Процес реєстрації користувача з обробкою помилок"
+
+== 1. Спроба реєстрації ==
+
+guest -> client: Вводить email, username, password
+client -> client: Локальна валідація даних (формат email, довжина паролю)
+
+alt Успішна локальна валідація
+
+    client -> api: POST /api/register (email, username, password)
+    activate api
+    api -> api: Серверна валідація даних
+    alt Дані коректні
+        ' Розгалуження на сервері: перевіряємо, чи існує такий користувач
+        alt Користувач з таким email/username НЕ існує
+            api -> db: INSERT INTO Users (..., is_verified=0)
+            activate db
+            db --> api: Повертає user_id
+            deactivate db
+
+            api -> api: Генерує токен верифікації
+            api -> api: Хешує токен
+            api -> db: INSERT INTO AuthTokens (user_id, token_hash, type='verify_email')
+            activate db
+            db --> api: Успіх
+            deactivate db
+            
+            api -> smtp: SEND лист з https://.../verify-email?token=...
+            activate smtp
+            smtp --> api: OK
+            deactivate smtp
+
+            api --> client: 201 Created ("Перевірте пошту для завершення реєстрації")
+        
+        else Користувач вже існує
+            api -> db: SELECT id FROM Users WHERE email=? OR username=?
+            activate db
+            db --> api: Повертає існуючий запис
+            deactivate db
+            
+            ' Повертаємо помилку клієнту
+            api --> client: 409 Conflict ("Користувач з таким email або іменем вже існує")
+        end
+    else Помилка валідації
+        api -> client: 400 Bad Request ("Некоректний формат email або пароль")
+        client -> guest: Показати помилку
+    end
+    deactivate api
+
+else Помилка локальної валідації
+    client -> guest: Показати помилку (напр., "Некоректний формат email")
+end
+
+
+== 2. Спроба валідації Email ==
+
+guest -> client: клієнт переходить по поклику підтвердженні email у листі 
+client -> client: витягує token
+client -> api: POST token
+activate api
+
+' Розгалуження: перевіряємо токен
+alt Токен знайдено і він дійсний
+    api -> api: хешує токен
+    api -> db: SELECT user_id FROM AuthTokens WHERE token_hash=? AND expires_at > NOW() AND is_used=0
+    activate db
+    db --> api: Повертає user_record
+    deactivate db
+    api -> vpn: Виділяє ip | генерує конфіг
+    vpn -> api: ip
+    api -> db: UPDATE Users SET is_verified=1, ip = ip WHERE id=user_id
+    activate db
+    db --> api: Успіх
+    deactivate db
+    
+    api -> db: UPDATE AuthTokens SET is_used=1 WHERE token=? ' Помічаємо токен як використаний
+    activate db
+    db --> api: Успіх
+    deactivate db
+
+    ' Відповідаємо користувачу (в браузері)
+    api --> guest: 302 Redirect (на сторінку "Вхід" з повідомленням про успіх)
+
+else Токен не знайдено або він недійсний
+    ' Тут можуть бути різні причини: токен не існує, прострочений, вже використаний
+    api -> db: SELECT ...
+    activate db
+    db --> api: Повертає NULL або помилку
+    deactivate db
+
+    api --> guest: 400 Bad Request ("Недійсне або прострочене посилання для верифікації")
+end
+
+deactivate api
+
+@enduml

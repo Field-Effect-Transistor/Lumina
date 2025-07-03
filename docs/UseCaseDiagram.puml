@@ -21,6 +21,7 @@ package "1. Керування Акаунтом" {
     usecase "Змінити пароль" as UC_ChangePassword
     usecase "Змінити email" as UC_ChangeEmail
     usecase "Змінити ім'я" as UC_ChangeName
+    usecase "Автоматично відновити сесію" as UC_RestoreSession
     usecase "Переглянути активні сесії" as UC_ListSessions
     usecase "Примусово відкликати сесію" as UC_RevokeSession
     usecase "Примусово відкликати всі сесії" as UC_RevokeAllSessions
@@ -62,6 +63,7 @@ guest ..> UC_VerifyEmail
 guest ..> UC_Login
 guest ..> UC_ResetPassword
 
+user ..> UC_RestoreSession
 user ..> UC_Logout
 user ..> UC_ChangeEmail
 user ..> UC_ChangePassword
@@ -105,6 +107,7 @@ UC_ResetPassword ..> UC_Login : <<extends>>
 UC_VpnConnect ..> UC_Login : <<includes>>
 UC_RemoteSession ..> UC_VpnConnect : <<includes>>
 UC_SSH_Session ..> UC_VpnConnect : <<includes>>
+UC_Register ..> UC_VerifyEmail : <<extends>>
 
 ' -- Керування акаунтом (вимагає авторизації) --
 UC_Logout ..> UC_Login : <<includes>>
@@ -114,6 +117,7 @@ UC_ChangeName ..> UC_Login : <<includes>>
 UC_ListSessions ..> UC_Login : <<includes>>
 UC_RevokeSession ..> UC_Login : <<includes>>
 UC_RevokeAllSessions ..> UC_Login : <<includes>>
+UC_Login ..> UC_RestoreSession: <<includes>>
 
 ' -- Керування групами (вимагає авторизації) --
 UC_CreateGroup ..> UC_Login : <<includes>>
