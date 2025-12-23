@@ -1,0 +1,314 @@
+openapi: 3.0.3
+info:
+  title: "VPN & Remote Access API"
+  description: |
+    REST API для комплексного рішення з управління VPN-мережами, доступом
+    користувачів та груп. Дозволяє автоматизувати отримання конфігурацій,
+    керувати доступом та сесіями віддаленого доступу.
+  version: "1.0.0"
+  contact:
+    name: API Support
+    email: support@yourvpnservice.com
+
+servers:
+  - url: https://api.yourvpnservice.com/v1
+    description: Production Server
+  - url: https://api.staging.yourvpnservice.com/v1
+    description: Staging Server
+
+tags:
+  - name: Authentication
+    description: Ендпоінти для реєстрації, входу та керування сесіями.
+  - name: Users
+    description: Операції, пов'язані з акаунтом користувача.
+  - name: Groups
+    description: Керування групами та їх членами.
+  - name: VPN
+    description: Отримання конфігураційних файлів VPN.
+
+# ===============================================================
+#  Секція компонентів для перевикористання
+# ===============================================================
+components:
+  # --- Схеми даних (Моделі) ---
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Унікальний ідентифікатор користувача.
+          example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+        email:
+          type: string
+          format: email
+          description: Email користувача (використовується як логін).
+          example: "user@example.com"
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата та час створення акаунту.
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1a4e511-2d48-4e89-a4a3-f0d57a2d71d5"
+        name:
+          type: string
+          description: Назва групи.
+          example: "Developers"
+        ownerId:
+          type: string
+          format: uuid
+          description: ID власника групи.
+          example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+        memberCount:
+          type: integer
+          description: Кількість учасників у групі.
+          example: 5
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Внутрішній код помилки.
+          example: 4001
+        message:
+          type: string
+          description: Опис помилки, зрозумілий для людини.
+          example: "User with this email already exists."
+
+  # --- Параметри запитів ---
+  parameters:
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: ID групи для виконання операції.
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: ID користувача для виконання операції.
+      schema:
+        type: string
+        format: uuid
+    PaginationLimit:
+      name: limit
+      in: query
+      description: Максимальна кількість елементів на сторінці.
+      schema:
+        type: integer
+        default: 20
+    PaginationOffset:
+      name: offset
+      in: query
+      description: Кількість елементів, які потрібно пропустити (для пагінації).
+      schema:
+        type: integer
+        default: 0
+
+  # --- Стандартні відповіді ---
+  responses:
+    Unauthorized:
+      description: "Помилка авторизації. JWT токен не надано або він недійсний."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: "Ресурс не знайдено."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  # --- Схеми безпеки ---
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Для доступу до захищених ендпоінтів необхідно надати Access JWT токен
+        в заголовку `Authorization`. Формат: `Authorization: Bearer <token>`.
+
+# ===============================================================
+#  Глобальні налаштування безпеки
+# ===============================================================
+security:
+  - bearerAuth: []
+
+# ===============================================================
+#  Шляхи (Ендпоінти)
+# ===============================================================
+paths:
+  # --- Authentication ---
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Реєстрація нового користувача
+      # Цей ендпоінт публічний, тому ми "вимикаємо" для нього глобальну безпеку
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '201':
+          description: Користувача успішно створено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '409':
+          description: Користувач з таким email вже існує.
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Вхід в систему та отримання токенів
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Успішний вхід.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+
+  # --- VPN ---
+  /vpn/config:
+    get:
+      tags:
+        - VPN
+      summary: Завантажити персональний .ovpn файл
+      responses:
+        '200':
+          description: Файл конфігурації OpenVPN.
+          content:
+            application/x-openvpn-profile:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # --- Groups ---
+  /groups:
+    get:
+      tags:
+        - Groups
+      summary: Отримати список груп поточного користувача
+      parameters:
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+      responses:
+        '200':
+          description: Список груп.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /groups/{groupId}:
+    get:
+      tags:
+        - Groups
+      summary: Отримати детальну інформацію про групу
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: Детальна інформація про групу.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Groups
+      summary: Оновити інформацію про групу (тільки для власника)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "QA Engineers"
+      responses:
+        '200':
+          description: Групу успішно оновлено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+
+  /groups/{groupId}/members/{userId}:
+    delete:
+      tags:
+        - Groups
+      summary: Видалити користувача з групи (тільки для власника)
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: Користувача успішно видалено з групи (No Content).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - ви не є власником цієї групи.
+        '404':
+          $ref: '#/components/responses/NotFound'
